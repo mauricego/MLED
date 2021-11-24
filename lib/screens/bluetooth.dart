@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:mled/tools/edge_alert.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:mled/screens/home_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 
 //ignore: must_be_immutable
 class Bluetooth extends StatefulWidget {
@@ -18,8 +20,6 @@ class Bluetooth extends StatefulWidget {
 }
 
 class _Bluetooth extends State<Bluetooth> {
-  late List<BluetoothService> _services;
-
   @override
   void initState() {
     super.initState();
@@ -29,14 +29,14 @@ class _Bluetooth extends State<Bluetooth> {
   @override
   Widget build(BuildContext context) => WillPopScope(
       onWillPop: () async {
-        print("Scan stopped back button");
         widget.flutterBlue.stopScan();
-        //disconnect the device
+
         try {
           await widget.connectedDevice.disconnect();
         } catch (e) {
-          print(e);
+          //do nothing. connectedDevice not initialized
         }
+
         //clear the list
         widget.devicesList.clear();
         //clear the state
@@ -61,14 +61,7 @@ class _Bluetooth extends State<Bluetooth> {
             height: 50,
             child: Row(
               children: <Widget>[
-                Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      Text(device.name == '' ? '(unknown device)' : device.name),
-                      Text(device.id.toString()),
-                    ],
-                  ),
-                ),
+                Expanded(child: Center(child: Text(device.name == '' ? '(unknown device)' : device.name))),
                 FlatButton(
                   color: Colors.blue,
                   child: const Text(
@@ -105,35 +98,28 @@ class _Bluetooth extends State<Bluetooth> {
     );
   }
 
-  _showDialog() {
-    showDialog(
-        context: context,
-        builder: (_) {
-          return AlertDialog(
-            title: Text('Wanna Exit?'),
-            actions: [
-              FlatButton(
-                onPressed: () => Navigator.pop(context, false), // passing false
-                child: Text('No'),
-              ),
-              FlatButton(
-                onPressed: () => {
-                  Navigator.pop(context, true),
-                  _sendData("{ssid: '57Dps3P', password: '3p7SD#m\$87sa5k?=7HG'"),
-                }, // passing true
-                child: Text('Yes'),
-              ),
-            ],
-          );
-        }).then((exit) {
-      if (exit == null) return;
-
-      if (exit) {
-        // user pressed Yes button
-      } else {
-        // user pressed No button
-      }
-    });
+  _showDialog() async {
+    String ssid = "";
+    String password = "";
+    final text = await showTextInputDialog(
+      context: context,
+      textFields: const [
+        DialogTextField(
+          hintText: 'SSID/WLAN name',
+        ),
+        DialogTextField(
+          hintText: 'Password',
+          obscureText: true,
+        ),
+      ],
+      title: 'Connection Setup',
+      message: 'Input your SSID/WLAN name and password',
+    );
+    ssid = text!.elementAt(0);
+    password = text.elementAt(1);
+    String jsonString = '{"ssid":"' + ssid + '",' + '"password":"' + password + '"}';
+    //send data to esp32
+    _sendData(jsonString);
   }
 
   _addDeviceTolist(final BluetoothDevice device) {
@@ -142,23 +128,6 @@ class _Bluetooth extends State<Bluetooth> {
         widget.devicesList.add(device);
       });
     }
-  }
-
-  _sendData(String data) async {
-    late BluetoothCharacteristic characteristic;
-    List<BluetoothService> deviceServices = await widget.connectedDevice.discoverServices();
-    for (BluetoothService service in deviceServices) {
-      if (service.uuid.toString() == "f9c521f6-0f14-4499-8f76-43116b40007d") {
-        for (BluetoothCharacteristic blCharateristic in service.characteristics) {
-          if (blCharateristic.uuid.toString() == "23456f8d-4aa7-4a61-956b-39c9bce0ff00") {
-            characteristic = blCharateristic;
-          }
-        }
-      }
-    }
-    //write data to characteristic
-    await characteristic.write(utf8.encode(data)).then((value) => characteristic.read().then((value) => widget.ipAddress = (utf8.decode(value))));
-    print(widget.ipAddress);
   }
 
   _requestPermissionAndScan() async {
@@ -182,6 +151,46 @@ class _Bluetooth extends State<Bluetooth> {
         }
       });
       widget.flutterBlue.startScan();
+    }
+  }
+
+  _sendData(String data) async {
+    late BluetoothCharacteristic characteristic;
+    List<BluetoothService> deviceServices = await widget.connectedDevice.discoverServices();
+    for (BluetoothService service in deviceServices) {
+      if (service.uuid.toString() == "f9c521f6-0f14-4499-8f76-43116b40007d") {
+        for (BluetoothCharacteristic blCharateristic in service.characteristics) {
+          if (blCharateristic.uuid.toString() == "23456f8d-4aa7-4a61-956b-39c9bce0ff00") {
+            characteristic = blCharateristic;
+          }
+        }
+      }
+    }
+    //write data to characteristic
+    await characteristic.write(utf8.encode(data)).then((value) => characteristic.read().then((value) => widget.ipAddress = (utf8.decode(value))));
+
+    //regular expression all valid ip address
+    RegExp regExp = RegExp(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+
+    // check if the ip address is valid
+    if (regExp.hasMatch(widget.ipAddress)) {
+      EdgeAlert.show(context,
+          title: 'Connection successfully',
+          description: 'You are good to go',
+          gravity: EdgeAlert.TOP,
+          backgroundColor: const Color.fromRGBO(46, 204, 113, 1.0),
+          duration: EdgeAlert.LENGTH_SHORT,
+          icon: Icons.done);
+      //go back to home screen
+      Navigator.pop(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+    } else {
+      EdgeAlert.show(context,
+          title: 'Connection failed',
+          description: 'Your SSID or Password is invalid',
+          gravity: EdgeAlert.TOP,
+          backgroundColor: const Color.fromRGBO(237, 66, 69, 1.0),
+          duration: EdgeAlert.LENGTH_VERY_LONG,
+          icon: Icons.warning);
     }
   }
 }
