@@ -6,14 +6,15 @@ import 'package:flutter_blue/flutter_blue.dart';
 import 'package:mled/screens/home_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 //ignore: must_be_immutable
 class Bluetooth extends StatefulWidget {
   Bluetooth({Key? key}) : super(key: key);
   final FlutterBlue flutterBlue = FlutterBlue.instance;
-  List<BluetoothDevice> devicesList = <BluetoothDevice>[];
+  List<BluetoothDevice> bluetoothDevicesList = <BluetoothDevice>[];
   late BluetoothDevice connectedDevice;
-  late String ipAddress;
+  List<String> deviceList = <String>[];
 
   @override
   _Bluetooth createState() => _Bluetooth();
@@ -38,7 +39,7 @@ class _Bluetooth extends State<Bluetooth> {
         }
 
         //clear the list
-        widget.devicesList.clear();
+        widget.bluetoothDevicesList.clear();
         //clear the state
         setState(() {});
         // pop to get back to home
@@ -54,7 +55,7 @@ class _Bluetooth extends State<Bluetooth> {
 
   ListView _buildListViewOfDevices() {
     List<Container> containers = <Container>[];
-    for (BluetoothDevice device in widget.devicesList) {
+    for (BluetoothDevice device in widget.bluetoothDevicesList) {
       if (device.name.contains("LED-Strip-")) {
         containers.add(
           Container(
@@ -122,10 +123,10 @@ class _Bluetooth extends State<Bluetooth> {
     _sendData(jsonString);
   }
 
-  _addDeviceTolist(final BluetoothDevice device) {
-    if (!widget.devicesList.contains(device)) {
+  _addBluetoothDeviceToList(final BluetoothDevice device) {
+    if (!widget.bluetoothDevicesList.contains(device)) {
       setState(() {
-        widget.devicesList.add(device);
+        widget.bluetoothDevicesList.add(device);
       });
     }
   }
@@ -136,17 +137,33 @@ class _Bluetooth extends State<Bluetooth> {
     var status = await Permission.location.status;
   }
 
+  _storeDevices() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setStringList("deviceList", widget.deviceList);
+  }
+
+  _getStoredDevices() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? deviceList = prefs.getStringList("deviceList");
+
+    if (deviceList == null) {
+      prefs.setStringList("deviceList", widget.deviceList);
+    } else {
+      widget.deviceList = deviceList;
+    }
+  }
+
   _searchDevices(PermissionStatus permission) {
     if (permission.isGranted) {
       widget.flutterBlue.connectedDevices.asStream().listen((List<BluetoothDevice> devices) {
         for (BluetoothDevice device in devices) {
-          _addDeviceTolist(device);
+          _addBluetoothDeviceToList(device);
         }
       });
       widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
         for (ScanResult result in results) {
           if (result.device.name != "") {
-            _addDeviceTolist(result.device);
+            _addBluetoothDeviceToList(result.device);
           }
         }
       });
@@ -155,8 +172,10 @@ class _Bluetooth extends State<Bluetooth> {
   }
 
   _sendData(String data) async {
+    late String ipAddress;
     late BluetoothCharacteristic characteristic;
     List<BluetoothService> deviceServices = await widget.connectedDevice.discoverServices();
+
     for (BluetoothService service in deviceServices) {
       if (service.uuid.toString() == "f9c521f6-0f14-4499-8f76-43116b40007d") {
         for (BluetoothCharacteristic blCharateristic in service.characteristics) {
@@ -167,13 +186,14 @@ class _Bluetooth extends State<Bluetooth> {
       }
     }
     //write data to characteristic
-    await characteristic.write(utf8.encode(data)).then((value) => characteristic.read().then((value) => widget.ipAddress = (utf8.decode(value))));
-
+    await characteristic.write(utf8.encode(data)).then((value) => characteristic.read().then((value) => ipAddress = (utf8.decode(value))));
     //regular expression all valid ip address
     RegExp regExp = RegExp(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
-
     // check if the ip address is valid
-    if (regExp.hasMatch(widget.ipAddress)) {
+    if (regExp.hasMatch(ipAddress)) {
+      await _getStoredDevices();
+      widget.deviceList.add(ipAddress);
+      await _storeDevices();
       EdgeAlert.show(context,
           title: 'Connection successfully',
           description: 'You are good to go',
