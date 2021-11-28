@@ -38,6 +38,7 @@ dependencies:
   permission_handler: 8.3.0
   adaptive_dialog: 1.2.0
   edge_alert: 0.0.1
+  shared_preferences: ^2.0.9
 
 dev_dependencies:
   flutter_test:

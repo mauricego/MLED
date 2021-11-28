@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:mled/widgets/device_card.dart';
+import 'package:flutter/rendering.dart';
+
+import 'package:mled/screens/bluetooth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class DeviceScreen extends StatefulWidget {
+  const DeviceScreen({Key? key}) : super(key: key);
 
   @override
-  _HomeScreen createState() => _HomeScreen();
+  _DeviceScreen createState() => _DeviceScreen();
 }
 
-class _HomeScreen extends State<HomeScreen> {
-  List<String> deviceList = <String>[];
+class _DeviceScreen extends State<DeviceScreen> {
+  late String ipAddress;
+  late List<String> deviceList;
 
   @override
-  initState()  {
+  void initState() {
     super.initState();
     _getIpAddress();
   }
 
   _getIpAddress() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      deviceList = prefs.getStringList("deviceList")!;
-    });
+    deviceList = prefs.getStringList("deviceList")!;
   }
 
   @override
@@ -37,7 +38,13 @@ class _HomeScreen extends State<HomeScreen> {
     List<Container> containers = <Container>[];
     for (String device in deviceList) {
       containers.add(
-        Container(child: DeviceCard(ipAddress: device)),
+        Container(
+          height: 50,
+          child:
+            Scrollable(viewportBuilder: (BuildContext context, ViewportOffset position) {
+              return Text(device);
+            },)
+        ),
       );
     }
 
