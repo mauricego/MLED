@@ -17,41 +17,41 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyApp extends State<MyApp> {
-  _navigateToHomeScreen() {
-    //push replacement to home screen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
-  }
+  late bool isFirstLaunch;
 
-  _navigateToSetupScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const SetupScreen()),
-    );
-  }
-
-  _start() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool? firstTimeOpen = prefs.getBool("firstTimeOpen");
-
-    if (firstTimeOpen != null && !firstTimeOpen) {
-      _navigateToHomeScreen();
-    } else {
-      prefs.setBool("firstTimeOpen", false);
-      _navigateToSetupScreen();
-    }
+  Future<bool> _start() async {
+    await SharedPreferences.getInstance().then((prefs) {
+      if (prefs.getBool("isFirstLaunch") == null) {
+        prefs.setBool("isFirstLaunch", true);
+        isFirstLaunch = true;
+      } else {
+        isFirstLaunch = prefs.getBool("isFirstLaunch")!;
+      }
+    });
+    return Future.value(isFirstLaunch);
   }
 
   @override
   void initState() {
     super.initState();
-    _start();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return MaterialApp(
+        home: FutureBuilder<bool>(
+            future: _start(), // async work
+            builder: (context, AsyncSnapshot<bool> snapshot) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.waiting:
+                  return const Text('Loading....');
+                default:
+                  if (snapshot.hasError) {
+                    return const Text('Something went wrong. Restart the app');
+                  } else {
+                    return isFirstLaunch ? const SetupScreen() : const HomeScreen();
+                  }
+              }
+            }));
   }
 }

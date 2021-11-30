@@ -12,15 +12,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Bluetooth extends StatefulWidget {
   Bluetooth({Key? key}) : super(key: key);
   final FlutterBlue flutterBlue = FlutterBlue.instance;
-  List<BluetoothDevice> bluetoothDevicesList = <BluetoothDevice>[];
-  late BluetoothDevice connectedDevice;
-  List<String> deviceList = <String>[];
 
   @override
   _Bluetooth createState() => _Bluetooth();
 }
 
 class _Bluetooth extends State<Bluetooth> {
+  late BluetoothDevice connectedDevice;
+  List<BluetoothDevice> bluetoothDevicesList = <BluetoothDevice>[];
+  List<String> deviceList = <String>[];
+
   @override
   void initState() {
     super.initState();
@@ -33,13 +34,13 @@ class _Bluetooth extends State<Bluetooth> {
         widget.flutterBlue.stopScan();
 
         try {
-          await widget.connectedDevice.disconnect();
+          await connectedDevice.disconnect();
         } catch (e) {
           //do nothing. connectedDevice not initialized
         }
 
         //clear the list
-        widget.bluetoothDevicesList.clear();
+        bluetoothDevicesList.clear();
         //clear the state
         setState(() {});
         // pop to get back to home
@@ -55,7 +56,7 @@ class _Bluetooth extends State<Bluetooth> {
 
   ListView _buildListViewOfDevices() {
     List<Container> containers = <Container>[];
-    for (BluetoothDevice device in widget.bluetoothDevicesList) {
+    for (BluetoothDevice device in bluetoothDevicesList) {
       if (device.name.contains("LED-Strip-")) {
         containers.add(
           Container(
@@ -70,12 +71,13 @@ class _Bluetooth extends State<Bluetooth> {
                     style: TextStyle(color: Colors.white),
                   ),
                   onPressed: () async {
-                    widget.flutterBlue.stopScan();
+                    await widget.flutterBlue.stopScan();
                     try {
-                      device.connect().onError((error, stackTrace) => {device.disconnect(), device.connect()});
+                      await device.connect().onError((error, stackTrace) => {device.disconnect(), device.connect()});
                       setState(() {
-                        widget.connectedDevice = device;
+                        connectedDevice = device;
                       });
+                      connectedDevice = device;
                       _showDialog();
                     } catch (e) {
                       if (e != 'already_connected') {
@@ -120,13 +122,13 @@ class _Bluetooth extends State<Bluetooth> {
     password = text.elementAt(1);
     String jsonString = '{"ssid":"' + ssid + '",' + '"password":"' + password + '"}';
     //send data to esp32
-    _sendData(jsonString);
+    await _sendData(jsonString);
   }
 
   _addBluetoothDeviceToList(final BluetoothDevice device) {
-    if (!widget.bluetoothDevicesList.contains(device)) {
+    if (!bluetoothDevicesList.contains(device)) {
       setState(() {
-        widget.bluetoothDevicesList.add(device);
+        bluetoothDevicesList.add(device);
       });
     }
   }
@@ -139,7 +141,7 @@ class _Bluetooth extends State<Bluetooth> {
 
   _storeDevices() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList("deviceList", widget.deviceList);
+    prefs.setStringList("deviceList", deviceList);
   }
 
   _getStoredDevices() async {
@@ -147,9 +149,9 @@ class _Bluetooth extends State<Bluetooth> {
     List<String>? deviceList = prefs.getStringList("deviceList");
 
     if (deviceList == null) {
-      prefs.setStringList("deviceList", widget.deviceList);
+      prefs.setStringList("deviceList", this.deviceList);
     } else {
-      widget.deviceList = deviceList;
+      deviceList = deviceList;
     }
   }
 
@@ -174,7 +176,7 @@ class _Bluetooth extends State<Bluetooth> {
   _sendData(String data) async {
     late String ipAddress;
     late BluetoothCharacteristic characteristic;
-    List<BluetoothService> deviceServices = await widget.connectedDevice.discoverServices();
+    List<BluetoothService> deviceServices = await connectedDevice.discoverServices();
 
     for (BluetoothService service in deviceServices) {
       if (service.uuid.toString() == "f9c521f6-0f14-4499-8f76-43116b40007d") {
@@ -192,7 +194,7 @@ class _Bluetooth extends State<Bluetooth> {
     // check if the ip address is valid
     if (regExp.hasMatch(ipAddress)) {
       await _getStoredDevices();
-      widget.deviceList.add(ipAddress);
+      deviceList.add(ipAddress);
       await _storeDevices();
       EdgeAlert.show(context,
           title: 'Connection successfully',
@@ -202,7 +204,12 @@ class _Bluetooth extends State<Bluetooth> {
           duration: EdgeAlert.LENGTH_SHORT,
           icon: Icons.done);
       //go back to home screen
-      Navigator.pop(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+      await SharedPreferences.getInstance().then((prefs) => prefs.setBool("isFirstLaunch", false));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
     } else {
       EdgeAlert.show(context,
           title: 'Connection failed',
