@@ -29,11 +29,11 @@ class _DeviceCard extends State<DeviceCard> {
                       icon: const Icon(Icons.power_settings_new),
                       onPressed: () {
                         //TODO API call to device and trigger on/off
+                    
                       },
                     ),
                     
-                    //Text widget at top of card with IP address
-                    
+  
 
                     Text(widget.ipAddress),
                   ],

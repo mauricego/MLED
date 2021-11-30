@@ -21,7 +21,9 @@ class _HomeScreen extends State<HomeScreen> {
   _getIpAddress() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      deviceList = prefs.getStringList("deviceList")!;
+      if (prefs.getStringList("deviceList") != null) {
+        deviceList = prefs.getStringList("deviceList")!;
+      }
     });
   }
 
@@ -37,6 +39,7 @@ class _HomeScreen extends State<HomeScreen> {
     List<Container> containers = <Container>[];
     for (String device in deviceList) {
       containers.add(
+        //TODO ping ip and see if device is online
         Container(child: DeviceCard(ipAddress: device)),
       );
     }
