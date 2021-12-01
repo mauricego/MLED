@@ -24,7 +24,7 @@ jobs:
         
     # Get flutter dependencies.
     - run: flutter pub get
-    
+      working-directory: ./mled
     # Check for any formatting issues in the code.
     - run: flutter format --set-exit-if-changed .
       working-directory: ./mled
