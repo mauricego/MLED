@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mled/tools/api_request.dart';
 import 'package:mled/widgets/device_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -14,7 +15,7 @@ class _HomeScreen extends State<HomeScreen> {
   List<String> deviceList = <String>[];
 
   @override
-  initState()  {
+  initState() {
     super.initState();
     _getIpAddress();
   }
@@ -36,13 +37,31 @@ class _HomeScreen extends State<HomeScreen> {
       ),
       body: _buildListViewOfDevices());
 
-
   ListView _buildListViewOfDevices() {
-    List<Container> containers = <Container>[];
+    List<FutureBuilder> containers = <FutureBuilder>[];
+
     for (String device in deviceList) {
-      containers.add(
-        Container(child: DeviceCard(ipAddress: device))
-      );
+
+      containers.add(FutureBuilder<String>(
+        future: getRequest(device + "/toggleState"), // if you mean this method well return image url
+        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return DeviceCard(
+              ipAddress: device,
+              toggleState: snapshot.data.toString(),
+            );
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
+            //TODO: Animated Loading Icon
+            return Text("");
+          } else {
+            return Text("error");
+          }
+        },
+      )
+
+          // Container(child: DeviceCard(ipAddress: device))
+
+          );
     }
 
     return ListView(
