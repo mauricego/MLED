@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mled/tools/api_request.dart';
 
 class DeviceCard extends StatefulWidget {
   final String ipAddress;
@@ -28,8 +29,8 @@ class _DeviceCard extends State<DeviceCard> {
                     IconButton(
                       icon: const Icon(Icons.power_settings_new),
                       onPressed: () {
-                        //TODO API call to device and trigger on/off
-                    
+                        postRequest(widget.ipAddress, "test");
+
                       },
                     ),
                     

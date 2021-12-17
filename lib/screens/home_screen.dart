@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mled/widgets/device_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -35,12 +36,12 @@ class _HomeScreen extends State<HomeScreen> {
       ),
       body: _buildListViewOfDevices());
 
+
   ListView _buildListViewOfDevices() {
     List<Container> containers = <Container>[];
     for (String device in deviceList) {
       containers.add(
-        //TODO ping ip and see if device is online
-        Container(child: DeviceCard(ipAddress: device)),
+        Container(child: DeviceCard(ipAddress: device))
       );
     }
 

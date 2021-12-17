@@ -12,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Bluetooth extends StatefulWidget {
   Bluetooth({Key? key}) : super(key: key);
   final FlutterBlue flutterBlue = FlutterBlue.instance;
+  final serviceUUID = "f9c521f6-0f14-4499-8f76-43116b40007d";
+  final wifiCharacteristicUUID = "23456f8d-4aa7-4a61-956b-39c9bce0ff00";
+  final resetToken = "b055684c-68d4-41e5-ac56-d140a2668cd4";
 
   @override
   _Bluetooth createState() => _Bluetooth();
@@ -21,6 +24,8 @@ class _Bluetooth extends State<Bluetooth> {
   late BluetoothDevice connectedDevice;
   List<BluetoothDevice> bluetoothDevicesList = <BluetoothDevice>[];
   List<String> deviceList = <String>[];
+  bool gotMatchingIpAddressNotify = false;
+  String ipAddress = "0.0.0.0";
 
   @override
   void initState() {
@@ -79,6 +84,29 @@ class _Bluetooth extends State<Bluetooth> {
                       });
                       connectedDevice = device;
                       _showDialog();
+                    } catch (e) {
+                      if (e != 'already_connected') {
+                        rethrow;
+                      }
+                    }
+                  },
+                ),
+                FlatButton(
+                  color: Colors.blue,
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onPressed: () async {
+                    await widget.flutterBlue.stopScan();
+                    try {
+                      await device.connect().onError((error, stackTrace) => {device.disconnect(), device.connect()});
+                      setState(() {
+                        connectedDevice = device;
+                      });
+                      connectedDevice = device;
+                      String jsonString = '{"ssid":"' + widget.resetToken + '",' + '"password":"' + "reset_nvs" + '"}';
+                      _sendData(jsonString);
                     } catch (e) {
                       if (e != 'already_connected') {
                         rethrow;
@@ -164,35 +192,52 @@ class _Bluetooth extends State<Bluetooth> {
       });
       widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
         for (ScanResult result in results) {
-          if (result.device.name != "") {
+          if (result.device.name != "" || result.device.name.contains("LED-Strip")) {
             _addBluetoothDeviceToList(result.device);
           }
         }
       });
-      widget.flutterBlue.startScan();
+
+      widget.flutterBlue.startScan(withDevices: [
+        Guid(widget.serviceUUID),
+      ]);
     }
   }
 
   _sendData(String data) async {
-    late String ipAddress;
-    late BluetoothCharacteristic characteristic;
+    late BluetoothCharacteristic wifiCharacteristic;
+    RegExp regExIp = RegExp(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
     List<BluetoothService> deviceServices = await connectedDevice.discoverServices();
 
     for (BluetoothService service in deviceServices) {
-      if (service.uuid.toString() == "f9c521f6-0f14-4499-8f76-43116b40007d") {
-        for (BluetoothCharacteristic blCharateristic in service.characteristics) {
-          if (blCharateristic.uuid.toString() == "23456f8d-4aa7-4a61-956b-39c9bce0ff00") {
-            characteristic = blCharateristic;
+      if (service.uuid.toString() == widget.serviceUUID) {
+        for (BluetoothCharacteristic blCharacteristic in service.characteristics) {
+          if (blCharacteristic.uuid.toString() == widget.wifiCharacteristicUUID) {
+            wifiCharacteristic = blCharacteristic;
+            await wifiCharacteristic.setNotifyValue(true);
+            wifiCharacteristic.value.listen((value) {
+              ipAddress = utf8.decode(value).toString();
+              //notify returns nothing with the first notify
+              if (regExIp.hasMatch(ipAddress) && ipAddress != "0.0.0.0" && ipAddress != "") {
+                if (!gotMatchingIpAddressNotify) {
+                  print("notify:  " + utf8.decode(value).toString());
+                  gotMatchingIpAddressNotify = true;
+                  _handleNotify();
+                }
+              } else if (ipAddress != "") {
+                _handleNotify();
+              }
+            });
           }
         }
       }
     }
     //write data to characteristic
-    await characteristic.write(utf8.encode(data)).then((value) => characteristic.read().then((value) => ipAddress = (utf8.decode(value))));
-    //regular expression all valid ip address
-    RegExp regExp = RegExp(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
-    // check if the ip address is valid
-    if (regExp.hasMatch(ipAddress)) {
+    await wifiCharacteristic.write(utf8.encode(data));
+  }
+
+  Future<void> _handleNotify() async {
+    if (gotMatchingIpAddressNotify) {
       await _getStoredDevices();
       deviceList.add(ipAddress);
       await _storeDevices();

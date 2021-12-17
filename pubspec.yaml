@@ -39,6 +39,9 @@ dependencies:
   adaptive_dialog: 1.2.0
   edge_alert: 0.0.1
   shared_preferences: ^2.0.9
+  http: 0.13.4
+
+
 
 dev_dependencies:
   flutter_test:
