@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mled/screens/home_screen.dart';
 import 'package:mled/screens/setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,17 +18,21 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyApp extends State<MyApp> {
-  late bool isFirstLaunch;
+  //false for dev
+  late bool isFirstLaunch = false;
 
   Future<bool> _start() async {
     await SharedPreferences.getInstance().then((prefs) {
       if (prefs.getBool("isFirstLaunch") == null) {
-        prefs.setBool("isFirstLaunch", true);
-        isFirstLaunch = true;
+        //false for dev
+        prefs.setBool("isFirstLaunch", false);
+        //false for dev
+        isFirstLaunch = false;
       } else {
         isFirstLaunch = prefs.getBool("isFirstLaunch")!;
       }
     });
+    //TODO: emulator can't use bluetooth so don't show this screen at startup for development
     return Future.value(isFirstLaunch);
   }
 
@@ -44,7 +49,17 @@ class _MyApp extends State<MyApp> {
             builder: (context, AsyncSnapshot<bool> snapshot) {
               switch (snapshot.connectionState) {
                 case ConnectionState.waiting:
-                  return const Text('Loading....');
+                  return Container(
+                    decoration: const BoxDecoration(color: Colors.white),
+                    child: const Center(
+                      child: SpinKitSpinningLines(
+                        color: Colors.blue,
+                        size: 100,
+                        lineWidth: 5.0,
+                        itemCount: 5,
+                      ),
+                    ),
+                  );
                 default:
                   if (snapshot.hasError) {
                     return const Text('Something went wrong. Restart the app');

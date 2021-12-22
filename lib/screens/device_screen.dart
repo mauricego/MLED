@@ -1,58 +1,122 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'dart:async';
 
-import 'package:mled/screens/bluetooth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:mled/tools/api_request.dart';
+import 'package:mled/tools/led_modes.dart';
+import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceScreen extends StatefulWidget {
-  const DeviceScreen({Key? key}) : super(key: key);
+  final String ipAddress;
+  String toggleState = "OFF";
+  int brightness = 100;
+  Timer? timer;
+
+  DeviceScreen({Key? key, required this.ipAddress, required this.toggleState}) : super(key: key);
 
   @override
   _DeviceScreen createState() => _DeviceScreen();
 }
 
 class _DeviceScreen extends State<DeviceScreen> {
-  late String ipAddress;
-  late List<String> deviceList;
-
   @override
-  void initState() {
-    super.initState();
-    _getIpAddress();
-  }
-
-  _getIpAddress() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    deviceList = prefs.getStringList("deviceList")!;
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    return Scaffold(
       appBar: AppBar(
-        title: const Text("Device"),
-        centerTitle: true,
+        title: Text(widget.ipAddress),
       ),
-      body: _buildListViewOfDevices());
-
-  ListView _buildListViewOfDevices() {
-    List<Container> containers = <Container>[];
-    for (String device in deviceList) {
-      containers.add(
-        Container(
-          height: 50,
-          child:
-            Scrollable(viewportBuilder: (BuildContext context, ViewportOffset position) {
-              return Text(device);
-            },)
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(8),
-      children: <Widget>[
-        ...containers,
-      ],
+      body: Column(
+        children: <Widget>[
+          const SizedBox(height: 15),
+          Row(
+            children: <Widget>[
+              const SizedBox(width: 20),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      // color: Colors.green.withAlpha(100),
+                      color: widget.toggleState == "ON" ? Colors.green.withAlpha(100) : Colors.red.withAlpha(100),
+                      blurRadius: 15.0,
+                      spreadRadius: 0.0,
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.power_settings_new),
+                  onPressed: () {
+                    if (widget.toggleState == "ON") {
+                      postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "OFF"}');
+                      setState(() {
+                        widget.toggleState = "OFF";
+                      });
+                    } else {
+                      postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "ON"}');
+                      setState(() {
+                        widget.toggleState = "ON";
+                      });
+                    }
+                  },
+                  splashColor: widget.toggleState == "ON" ? Colors.red.withAlpha(100) : Colors.green.withAlpha(100),
+                ),
+              ),
+              Expanded(
+                child: SfSlider(
+                    min: 0,
+                    max: 255,
+                    value: widget.brightness.toDouble(),
+                    onChanged: (value) {
+                      setState(() {
+                        widget.brightness = value.round();
+                      });
+                    },
+                    onChangeStart: (value) {
+                      widget.timer?.cancel();
+                      widget.timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                        brightnessTimer();
+                      });
+                    },
+                    onChangeEnd: (value) {
+                      widget.timer?.cancel();
+                      brightnessTimer();
+                      setState(() {
+                        widget.brightness = value.round();
+                      });
+                    }),
+              ),
+            ],
+          ),
+          Expanded(
+              child: ListView.builder(
+            itemBuilder: _buildModeItem,
+            itemCount: ledModes.length,
+          ))
+        ],
+      ),
     );
+  }
+
+  Widget _buildModeItem(BuildContext context, int index) {
+    return Card(
+        elevation: 12.0,
+        margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 3.0),
+        child: Container(
+            decoration: const BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+            child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                leading: Container(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
+                  child: const Icon(Icons.light_mode, color: Colors.white),
+                ),
+                title: Text(
+                  ledModes[index],
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ))));
+  }
+
+  void brightnessTimer() {
+    changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
   }
 }

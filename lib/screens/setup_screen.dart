@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:mled/screens/bluetooth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SetupScreen extends StatelessWidget {
   const SetupScreen({Key? key}) : super(key: key);
