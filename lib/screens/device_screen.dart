@@ -85,17 +85,52 @@ class _DeviceScreen extends State<DeviceScreen> {
                       });
                     }),
               ),
+              IconButton(onPressed: _buildListViewLedModes, icon: Icon(Icons.lightbulb))
             ],
           ),
-          Expanded(
-              child: ListView.builder(
-            itemBuilder: _buildModeItem,
-            itemCount: ledModes.length,
-          ))
         ],
       ),
     );
   }
+
+  //click on button open alert dialog
+  void _buildListViewLedModes() {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("LED Modes"),
+            content: Container(
+              height: 700,
+              width: 400,
+              child: ListView.builder(
+                itemCount: ledModes.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return ListTile(
+                    title: Text(ledModes[index]),
+                    onTap: () {
+                      postRequest(widget.ipAddress + "/ledMode", '{"ledMode": "${index}"}');
+                      // Navigator.of(context).pop();
+                    },
+                  );
+                },
+              ),
+            ),
+          );
+        });
+  }
+
+  // void _buildListViewLedModes() {
+  //   AlertDialog(
+  //     title: const Text("Led Mode"),
+  //     content: Expanded(
+  //       child: ListView.builder(
+  //         itemBuilder: _buildModeItem,
+  //         itemCount: ledModes.length,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildModeItem(BuildContext context, int index) {
     return Card(
