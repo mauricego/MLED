@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mled/tools/api_request.dart';
@@ -44,15 +46,19 @@ class _HomeScreen extends State<HomeScreen> {
 
     for (String device in deviceList) {
       containers.add(FutureBuilder<String>(
-        future: getRequest(device + "/toggleState"), // if you mean this method well return image url
+        future: getRequest(device + "/information"),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
+            var jsonData = snapshot.data.toString();
+            var parsedJson = json.decode(jsonData);
+
             return DeviceCard(
               ipAddress: device,
-              toggleState: snapshot.data.toString(),
+              toggleState: parsedJson['toggleState'],
+              brightness: parsedJson['brightness'],
+              ledMode: parsedJson['ledMode'],
             );
           } else if (snapshot.connectionState == ConnectionState.waiting) {
-            //TODO: Animated Loading Icon
             return Center(
               child: Column(
                 children: const <Widget>[

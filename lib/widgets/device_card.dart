@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +9,12 @@ import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceCard extends StatefulWidget {
   final String ipAddress;
-  String toggleState = "OFF";
-  int brightness = 100;
+  String toggleState = "ON";
+  int brightness = 255;
+  int ledMode = 0;
   Timer? timer;
 
-  DeviceCard({Key? key, required this.ipAddress, required this.toggleState}) : super(key: key);
+  DeviceCard({Key? key, required this.ipAddress, required this.toggleState, required this.brightness, required this.ledMode}) : super(key: key);
 
   @override
   _DeviceCard createState() => _DeviceCard();
@@ -28,7 +30,7 @@ class _DeviceCard extends State<DeviceCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => DeviceScreen(ipAddress: widget.ipAddress, toggleState: widget.toggleState)));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DeviceScreen(ipAddress: widget.ipAddress)));
       },
       child: Card(
         shape: RoundedRectangleBorder(
@@ -102,6 +104,7 @@ class _DeviceCard extends State<DeviceCard> {
       ),
     );
   }
+
 
   void brightnessTimer() {
     changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
