@@ -15,7 +15,7 @@ class DeviceScreen extends StatefulWidget {
   int ledMode = 0;
 
   Timer? timer;
-  IndexedScrollController controller = IndexedScrollController();
+  ScrollController controller = ScrollController();
   PanelController panelController = PanelController();
   Color selectedModeIndicator = Colors.yellow;
 
@@ -32,7 +32,7 @@ class _DeviceScreen extends State<DeviceScreen> {
     Timer(
       const Duration(milliseconds: 10),
           () {
-        widget.controller.animateTo((widget.ledMode * 60) - 30);
+        widget.controller.jumpTo((widget.ledMode * 60) - 30);
         // widget.panelController.open();
       },
     );
