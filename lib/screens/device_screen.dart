@@ -67,14 +67,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                             height: 8,
                             width: 50,
                           )),
-                      const Center(
-                        child: Text(
-                          "Select LED mode",
-                          style: TextStyle(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+
                     ]),
                   ),
                   SizedBox(
@@ -152,17 +145,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                             widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
                           }),
                     ),
-                    // IconButton(onPressed: () => _buildModeItem(), icon: const Icon(Icons.lightbulb))
                   ],
                 ),
-                // SizedBox(
-                //   height: 500,
-                //   child: ListView.builder(
-                //       controller: widget.controller,
-                //       scrollDirection: Axis.vertical,
-                //       itemCount: ledModes.length,
-                //       itemBuilder: (BuildContext context, int index) => _buildModeItem(context, index)),
-                // )
                 IconButton(onPressed: _showLedModePanel, icon: const Icon(Icons.light_mode))
               ],
             ),
