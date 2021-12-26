@@ -30,13 +30,6 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreen extends State<DeviceScreen> {
   @override
   void initState() {
-    Timer(
-      const Duration(milliseconds: 10),
-      () {
-        widget.controller.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
-        // widget.panelController.open();
-      },
-    );
     super.initState();
   }
 
@@ -49,9 +42,54 @@ class _DeviceScreen extends State<DeviceScreen> {
           appBar: AppBar(
             title: Text(widget.ipAddress),
           ),
-          body: SizedBox(
-            height: 700,
-            child: Column(
+          body: SlidingUpPanel(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24.0),
+              topRight: Radius.circular(24.0),
+            ),
+            controller: widget.panelController,
+            minHeight: 0,
+            maxHeight: 600,
+            panel: Container(
+              padding: const EdgeInsets.all(5),
+              child: Column(
+                children: <Widget>[
+                  SizedBox(
+                    height: 40,
+                    child: Column(children: <Widget>[
+                      Container(
+                          decoration: const BoxDecoration(
+                            color: Color.fromRGBO(224, 224, 224, 1),
+                            borderRadius: BorderRadius.all(Radius.circular(5)),
+                          ),
+                          margin: const EdgeInsets.all(8.0),
+                          child: const SizedBox(
+                            height: 8,
+                            width: 50,
+                          )),
+                      const Center(
+                        child: Text(
+                          "Select LED mode",
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                  SizedBox(
+                    height: 550,
+                    child: ListView.builder(
+                      controller: widget.controller,
+                      scrollDirection: Axis.vertical,
+                      itemCount: ledModes.length,
+                      itemBuilder: (BuildContext context, int index) => _buildModeItem(context, index),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            body: Column(
               children: <Widget>[
                 const SizedBox(height: 15),
                 Row(
@@ -117,23 +155,36 @@ class _DeviceScreen extends State<DeviceScreen> {
                     // IconButton(onPressed: () => _buildModeItem(), icon: const Icon(Icons.lightbulb))
                   ],
                 ),
-                SizedBox(
-                  height: 500,
-                  child: ListView.builder(
-                      controller: widget.controller,
-                      scrollDirection: Axis.vertical,
-                      itemCount: ledModes.length,
-                      itemBuilder: (BuildContext context, int index) => _buildModeItem(context, index)),
-                )
+                // SizedBox(
+                //   height: 500,
+                //   child: ListView.builder(
+                //       controller: widget.controller,
+                //       scrollDirection: Axis.vertical,
+                //       itemCount: ledModes.length,
+                //       itemBuilder: (BuildContext context, int index) => _buildModeItem(context, index)),
+                // )
+                IconButton(onPressed: _showLedModePanel, icon: const Icon(Icons.light_mode))
               ],
             ),
           )));
 
+  void _showLedModePanel() {
+    widget.panelController.show();
+    widget.panelController.open();
+    widget.controller.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
+  }
+
   Widget _buildModeItem(BuildContext context, int index) {
     return (Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2.0),
         child: Container(
-            decoration: const BoxDecoration(color: Color.fromRGBO(64, 75, 96, .9)),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(64, 75, 96, .9),
+              borderRadius: BorderRadius.circular(10.0),
+            ),
             child: ListTile(
                 onTap: () {
                   postRequest(widget.ipAddress + "/ledMode", '{"ledMode": "$index"}');
