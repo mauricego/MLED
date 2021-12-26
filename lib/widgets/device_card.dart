@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,16 +20,42 @@ class DeviceCard extends StatefulWidget {
 }
 
 class _DeviceCard extends State<DeviceCard> {
+  late DeviceScreen deviceScreen;
+
+  void _callbackSetState(List<String> valueList) {
+    setState(() {
+      widget.toggleState = valueList.elementAt(0);
+      widget.brightness = int.parse(valueList.elementAt(1));
+      widget.ledMode = int.parse(valueList.elementAt(2));
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    deviceScreen = DeviceScreen(
+      ipAddress: widget.ipAddress,
+      brightness: widget.brightness,
+      ledMode: widget.ledMode,
+      toggleState: widget.toggleState,
+      callbackSetState: _callbackSetState,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => DeviceScreen(ipAddress: widget.ipAddress)));
+      onTap: () async {
+        await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => DeviceScreen(
+                      ipAddress: widget.ipAddress,
+                      brightness: widget.brightness,
+                      ledMode: widget.ledMode,
+                      toggleState: widget.toggleState,
+                      callbackSetState: _callbackSetState,
+                    )));
       },
       child: Card(
         shape: RoundedRectangleBorder(
@@ -104,7 +129,6 @@ class _DeviceCard extends State<DeviceCard> {
       ),
     );
   }
-
 
   void brightnessTimer() {
     changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
