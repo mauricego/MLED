@@ -5,7 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/widgets/device_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -36,8 +36,14 @@ class _HomeScreen extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
-        title: const Text("Device"),
-        centerTitle: true,
+        leading: const Icon(Icons.menu),
+        title: const Text('Devices'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(Icons.settings),
+          ),
+        ],
       ),
       body: _buildListViewOfDevices());
 

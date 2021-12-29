@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mled/screens/home_screen.dart';
 import 'package:mled/screens/setup_screen.dart';
+import 'package:mled/tools/color_convert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -44,6 +45,22 @@ class _MyApp extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        title: "MLED",
+
+        theme: ThemeData(
+          primarySwatch: createMaterialColor(const Color.fromRGBO(27, 28, 39, 1)),
+          scaffoldBackgroundColor: createMaterialColor(const Color.fromRGBO(27, 28, 39, 1)),
+
+          cardTheme: CardTheme(
+            color: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
+          ),
+          buttonTheme: const ButtonThemeData(
+            buttonColor: Colors.blue,
+            textTheme: ButtonTextTheme.primary,
+          ),
+        ),
+
+
         home: FutureBuilder<bool>(
             future: _start(), // async work
             builder: (context, AsyncSnapshot<bool> snapshot) {
