@@ -10,12 +10,13 @@ import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceCard extends StatefulWidget {
   final String ipAddress;
-  String toggleState = "ON";
-  int brightness = 255;
-  int ledMode = 0;
+  String toggleState;
+  int brightness;
+  int ledMode;
+  int speed;
   Timer? timer;
 
-  DeviceCard({Key? key, required this.ipAddress, required this.toggleState, required this.brightness, required this.ledMode}) : super(key: key);
+  DeviceCard({Key? key, required this.ipAddress, required this.toggleState, required this.brightness, required this.ledMode, required this.speed}) : super(key: key);
 
   @override
   _DeviceCard createState() => _DeviceCard();
@@ -40,6 +41,7 @@ class _DeviceCard extends State<DeviceCard> {
       brightness: widget.brightness,
       ledMode: widget.ledMode,
       toggleState: widget.toggleState,
+      speed: widget.speed,
       callbackSetState: _callbackSetState,
     );
   }
@@ -56,6 +58,7 @@ class _DeviceCard extends State<DeviceCard> {
                       brightness: widget.brightness,
                       ledMode: widget.ledMode,
                       toggleState: widget.toggleState,
+                      speed: widget.speed,
                       callbackSetState: _callbackSetState,
                     )));
       },

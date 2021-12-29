@@ -63,6 +63,7 @@ class _HomeScreen extends State<HomeScreen> {
               toggleState: parsedJson['toggleState'],
               brightness: parsedJson['brightness'],
               ledMode: parsedJson['ledMode'],
+              speed: parsedJson["speed"],
             );
           } else if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(

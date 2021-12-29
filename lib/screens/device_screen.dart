@@ -14,15 +14,17 @@ class DeviceScreen extends StatefulWidget {
   String toggleState = "ON";
   int brightness = 255;
   int ledMode = 0;
+  int speed = 0;
 
-  Timer? timer;
+  Timer? brightnessTimer;
+  Timer? speedTimer;
   ScrollController controller = ScrollController();
   PanelController panelController = PanelController();
   Color selectedModeIndicator = Colors.yellow;
   final ValueChanged<List<String>> callbackSetState;
 
   DeviceScreen(
-      {Key? key, required this.callbackSetState, required this.ipAddress, required this.brightness, required this.ledMode, required this.toggleState})
+      {Key? key, required this.callbackSetState, required this.ipAddress, required this.brightness, required this.ledMode, required this.toggleState, required this.speed})
       : super(key: key);
 
   @override
@@ -139,48 +141,139 @@ class _DeviceScreen extends State<DeviceScreen> {
                     : createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.2)),
               ),
             ),
-            Expanded(
-              child: SfSliderTheme(
-                data: SfSliderThemeData(
-                  activeTrackColor: const Color.fromRGBO(62, 123, 250, 1),
-                  inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
-                  activeTrackHeight: 10,
-                  inactiveTrackHeight: 10,
-                  thumbRadius: 12,
-                  thumbColor: const Color.fromRGBO(255, 255, 255, 1),
-                  tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
-                ),
-                child: SfSlider(
-                    min: 0,
-                    max: 255,
-                    value: widget.brightness.toDouble(),
-                    enableTooltip: true,
-                    tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
-                      return ((actualValue / 255) * 100).round().toString() + " %";
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        widget.brightness = value.round();
-                      });
-                    },
-                    onChangeStart: (value) {
-                      widget.timer?.cancel();
-                      widget.timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-                        brightnessTimer();
-                      });
-                    },
-                    onChangeEnd: (value) {
-                      widget.timer?.cancel();
-                      brightnessTimer();
-                      setState(() {
-                        widget.brightness = value.round();
-                      });
-                      widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
-                    }),
-              ),
-            ),
           ],
         ),
+        Column(children: [
+          const Text(
+            "Brightness",
+            textScaleFactor: 1.2,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(50),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.08),
+                  blurRadius: 10.0,
+                  spreadRadius: 0.0,
+                ),
+              ],
+            ),
+            child: SfSliderTheme(
+              data: SfSliderThemeData(
+                activeTrackColor: const Color.fromRGBO(62, 123, 250, 1),
+                inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
+                activeTrackHeight: 10,
+                inactiveTrackHeight: 10,
+                thumbRadius: 12,
+                thumbColor: const Color.fromRGBO(255, 255, 255, 1),
+                tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
+              ),
+              child: SfSlider(
+                  min: 0,
+                  max: 255,
+                  value: widget.brightness.toDouble(),
+                  enableTooltip: true,
+                  tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
+                    return ((actualValue / 255) * 100).round().toString() + " %";
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      widget.brightness = value.round();
+                    });
+                  },
+                  onChangeStart: (value) {
+                    widget.brightnessTimer?.cancel();
+                    widget.brightnessTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                      brightnessTimer();
+                    });
+                  },
+                  onChangeEnd: (value) {
+                    widget.brightnessTimer?.cancel();
+                    brightnessTimer();
+                    setState(() {
+                      widget.brightness = value.round();
+                    });
+                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                  }),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 15),
+        Column(children: [
+          const Text(
+            "Speed",
+            textScaleFactor: 1.2,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(50),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.08),
+                  blurRadius: 10.0,
+                  spreadRadius: 0.0,
+                ),
+              ],
+            ),
+            child: SfSliderTheme(
+              data: SfSliderThemeData(
+                activeTrackColor: const Color.fromRGBO(62, 123, 250, 1),
+                inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
+                activeTrackHeight: 10,
+                inactiveTrackHeight: 10,
+                thumbRadius: 12,
+                thumbColor: const Color.fromRGBO(255, 255, 255, 1),
+                tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
+              ),
+              child: SfSlider(
+                  min: 0,
+                  max: 65535,
+                  value: widget.speed.toDouble(),
+                  enableTooltip: true,
+                  tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
+                    return ((actualValue / 65535) * 100).round().toString() + " %";
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      widget.speed = value.round();
+                    });
+                  },
+                  onChangeStart: (value) {
+                    widget.speedTimer?.cancel();
+                    widget.speedTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                      speedTimer();
+                    });
+                  },
+                  onChangeEnd: (value) {
+                    widget.speedTimer?.cancel();
+                    speedTimer();
+                    setState(() {
+                      widget.speed = value.round();
+                    });
+                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                  }),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 15),
+        const Text(
+          "Led animation mode",
+          textScaleFactor: 1.2,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 15),
         _buildModeButton()
       ],
     );
@@ -266,5 +359,9 @@ class _DeviceScreen extends State<DeviceScreen> {
 
   void brightnessTimer() {
     changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
+  }
+
+  void speedTimer() {
+    changeBrightness(widget.ipAddress + "/speed", '{"speed": "' + widget.speed.toString() + '"}');
   }
 }
