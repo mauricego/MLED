@@ -49,11 +49,8 @@ class _MyApp extends State<MyApp> {
 
         theme: ThemeData(
           primarySwatch: createMaterialColor(const Color.fromRGBO(27, 28, 39, 1)),
-          scaffoldBackgroundColor: createMaterialColor(const Color.fromRGBO(27, 28, 39, 1)),
+          scaffoldBackgroundColor: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
 
-          cardTheme: CardTheme(
-            color: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
-          ),
           buttonTheme: const ButtonThemeData(
             buttonColor: Colors.blue,
             textTheme: ButtonTextTheme.primary,

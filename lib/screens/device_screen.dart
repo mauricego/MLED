@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mled/tools/api_request.dart';
+import 'package:mled/tools/color_convert.dart';
 import 'package:mled/tools/led_modes.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
+import "package:syncfusion_flutter_core/theme.dart";
 
 class DeviceScreen extends StatefulWidget {
   final String ipAddress;
@@ -50,6 +52,10 @@ class _DeviceScreen extends State<DeviceScreen> {
               controller: widget.panelController,
               minHeight: 0,
               maxHeight: 600,
+              color: const Color.fromRGBO(40, 41, 61, 1),
+              backdropOpacity: 0.3,
+              backdropTapClosesPanel: true,
+              backdropEnabled: true,
               panel: Container(
                 padding: const EdgeInsets.all(5),
                 child: Column(
@@ -102,9 +108,11 @@ class _DeviceScreen extends State<DeviceScreen> {
                 boxShadow: [
                   BoxShadow(
                     // color: Colors.green.withAlpha(100),
-                    color: widget.toggleState == "ON" ? Colors.green.withAlpha(100) : Colors.red.withAlpha(100),
+                    color: widget.toggleState == "ON"
+                        ? createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.7))
+                        : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
                     blurRadius: 15.0,
-                    spreadRadius: 0.0,
+                    spreadRadius: 1.0,
                   ),
                 ],
               ),
@@ -116,42 +124,60 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.toggleState = "OFF";
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
                   } else {
                     postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "ON"}');
                     setState(() {
                       widget.toggleState = "ON";
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
                   }
+                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
                 },
-                splashColor: widget.toggleState == "ON" ? Colors.red.withAlpha(100) : Colors.green.withAlpha(100),
+                color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
+                highlightColor: Colors.blue,
+                splashColor: widget.toggleState == "ON"
+                    ? createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.2))
+                    : createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.2)),
               ),
             ),
             Expanded(
-              child: SfSlider(
-                  min: 0,
-                  max: 255,
-                  value: widget.brightness.toDouble(),
-                  onChanged: (value) {
-                    setState(() {
-                      widget.brightness = value.round();
-                    });
-                  },
-                  onChangeStart: (value) {
-                    widget.timer?.cancel();
-                    widget.timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+              child: SfSliderTheme(
+                data: SfSliderThemeData(
+                  activeTrackColor: const Color.fromRGBO(62, 123, 250, 1),
+                  inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
+                  activeTrackHeight: 10,
+                  inactiveTrackHeight: 10,
+                  thumbRadius: 12,
+                  thumbColor: const Color.fromRGBO(255, 255, 255, 1),
+                  tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
+                ),
+                child: SfSlider(
+                    min: 0,
+                    max: 255,
+                    value: widget.brightness.toDouble(),
+                    enableTooltip: true,
+                    tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
+                      return ((actualValue / 255) * 100).round().toString() + " %";
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        widget.brightness = value.round();
+                      });
+                    },
+                    onChangeStart: (value) {
+                      widget.timer?.cancel();
+                      widget.timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                        brightnessTimer();
+                      });
+                    },
+                    onChangeEnd: (value) {
+                      widget.timer?.cancel();
                       brightnessTimer();
-                    });
-                  },
-                  onChangeEnd: (value) {
-                    widget.timer?.cancel();
-                    brightnessTimer();
-                    setState(() {
-                      widget.brightness = value.round();
-                    });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
-                  }),
+                      setState(() {
+                        widget.brightness = value.round();
+                      });
+                      widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                    }),
+              ),
             ),
           ],
         ),
@@ -161,44 +187,50 @@ class _DeviceScreen extends State<DeviceScreen> {
   }
 
   Widget _buildModeButton() {
-    return SizedBox(
+    return Container(
         height: 60,
         width: 200,
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 20.0, spreadRadius: 20, offset: Offset(0, 5)),
+          ],
+        ),
         child: Card(
+            color: createMaterialColor(const Color.fromRGBO(85, 87, 112, 1)),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
+              borderRadius: BorderRadius.circular(10.0),
             ),
             margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2.0),
-            child: Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(64, 75, 96, .9),
+            child: ListTile(
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
-                child: ListTile(
-                    onTap: () {
-                      _showLedModePanel();
-                    },
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
-                    leading: Container(
-                      padding: const EdgeInsets.only(right: 12.0),
-                      decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
-                      child: _buildChild(widget.ledMode),
-                    ),
-                    title: Text(
-                      ledModes[widget.ledMode],
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    )))));
+                onTap: () {
+                  _showLedModePanel();
+                },
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
+                leading: Container(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
+                  child: _buildChild(widget.ledMode),
+                ),
+                title: Text(
+                  ledModes[widget.ledMode],
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ))));
   }
 
   Widget _buildModeItem(BuildContext context, int index) {
     return (Card(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
+          borderRadius: BorderRadius.circular(10.0),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2.0),
+        color: const Color.fromRGBO(85, 87, 112, 1),
         child: Container(
             decoration: BoxDecoration(
-              color: const Color.fromRGBO(64, 75, 96, .9),
+              color: const Color.fromRGBO(85, 87, 112, 1),
               borderRadius: BorderRadius.circular(10.0),
             ),
             child: ListTile(
