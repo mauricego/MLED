@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import "package:mled/colorPicker/colorpicker.dart";
+import 'package:mled/colorPicker/palette.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
 import 'package:mled/tools/led_modes.dart';
@@ -15,16 +17,24 @@ class DeviceScreen extends StatefulWidget {
   int brightness = 255;
   int ledMode = 0;
   int speed = 0;
+  Color pickerColor = Color(0xff3a42ff);
 
   Timer? brightnessTimer;
   Timer? speedTimer;
+  Timer? colorTimer;
   ScrollController controller = ScrollController();
   PanelController panelController = PanelController();
   Color selectedModeIndicator = Colors.yellow;
   final ValueChanged<List<String>> callbackSetState;
 
   DeviceScreen(
-      {Key? key, required this.callbackSetState, required this.ipAddress, required this.brightness, required this.ledMode, required this.toggleState, required this.speed})
+      {Key? key,
+      required this.callbackSetState,
+      required this.ipAddress,
+      required this.brightness,
+      required this.ledMode,
+      required this.toggleState,
+      required this.speed})
       : super(key: key);
 
   @override
@@ -274,9 +284,35 @@ class _DeviceScreen extends State<DeviceScreen> {
           ),
         ),
         const SizedBox(height: 15),
-        _buildModeButton()
+        _buildModeButton(),
+        _buildColorPicker(),
       ],
     );
+  }
+
+  Widget _buildColorPicker() {
+    return ColorPicker(
+      portraitOnly: true,
+      pickerColor: widget.pickerColor,
+      colorPickerWidth: 300,
+      onColorChanged: (Color value) {
+        // widget.colorTimer?.cancel();
+        // widget.colorTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        //   colorTimer();
+        // });
+        // print(value);
+        setState(() {
+          widget.pickerColor = value;
+        });
+      },
+      onColorChangedEnd: (Color value) {
+        print(value);
+      },
+    );
+  }
+
+  void colorTimer() {
+    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.pickerColor.toString() + '", "colorSide": "' + widget.pickerColor.toString() + '"}');
   }
 
   Widget _buildModeButton() {
