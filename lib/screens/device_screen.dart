@@ -142,7 +142,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                       widget.toggleState = "ON";
                     });
                   }
-                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+
                 },
                 color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
                 highlightColor: Colors.blue,
@@ -208,7 +209,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.brightness = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+
                   }),
             ),
           ),
@@ -269,7 +271,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.speed = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+
                   }),
             ),
           ),
@@ -295,18 +298,30 @@ class _DeviceScreen extends State<DeviceScreen> {
       portraitOnly: true,
       pickerColor: widget.pickerColor,
       colorPickerWidth: 300,
+      onColorChangedStart: (Color value){
+        widget.colorTimer?.cancel();
+        widget.colorTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+          colorTimer();
+        });
+        print("START " + value.toString());
+        setState(() {
+          widget.pickerColor = value;
+        });
+      },
       onColorChanged: (Color value) {
-        // widget.colorTimer?.cancel();
-        // widget.colorTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        //   colorTimer();
-        // });
-        // print(value);
         setState(() {
           widget.pickerColor = value;
         });
       },
       onColorChangedEnd: (Color value) {
-        print(value);
+        widget.colorTimer?.cancel();
+        brightnessTimer();
+        setState(() {
+          widget.pickerColor = value;
+        });
+        widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+
+        print("END " + value.toString());
       },
     );
   }
@@ -369,7 +384,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     widget.ledMode = index;
                     widget.selectedModeIndicator = Colors.yellow;
                   });
-                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString()]);
+                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
                 },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
                 leading: Container(

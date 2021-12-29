@@ -59,13 +59,15 @@ class ColorPickerArea extends StatelessWidget {
   const ColorPickerArea(
     this.hsvColor,
     this.onColorChanged,
-    this.onColorChangedEnd, {
+    this.onColorChangedEnd,
+    this.onColorChangedStart, {
     Key? key,
   }) : super(key: key);
 
   final HSVColor hsvColor;
   final ValueChanged<HSVColor> onColorChanged;
   final ValueChanged<HSVColor> onColorChangedEnd;
+  final ValueChanged<HSVColor> onColorChangedStart;
 
   void _handleColorWheelChange(double hue, double radio) {
     onColorChanged(hsvColor.withHue(hue).withSaturation(radio));
@@ -73,6 +75,11 @@ class ColorPickerArea extends StatelessWidget {
 
   void _handleColorWheelChangeEnd() {
     onColorChangedEnd(hsvColor);
+  }
+
+  void _handleColorWheelChangeStart(double hue, double radio) {
+    onColorChangedStart(hsvColor.withHue(hue).withSaturation(radio));
+    onColorChanged(hsvColor.withHue(hue).withSaturation(radio));
   }
 
   void _handleGesture(Offset position, BuildContext context, double height, double width) {
@@ -88,6 +95,21 @@ class ColorPickerArea extends StatelessWidget {
     double dist = sqrt(pow(horizontal - center.dx, 2) + pow(vertical - center.dy, 2)) / radio;
     double rad = (atan2(horizontal - center.dx, vertical - center.dy) / pi + 1) / 2 * 360;
     _handleColorWheelChange(((rad + 90) % 360).clamp(0, 360), dist.clamp(0, 1));
+  }
+
+  void _handleGestureStart(Offset position, BuildContext context, double height, double width) {
+    RenderBox? getBox = context.findRenderObject() as RenderBox?;
+    if (getBox == null) return;
+
+    Offset localOffset = getBox.globalToLocal(position);
+    double horizontal = localOffset.dx.clamp(0.0, width);
+    double vertical = localOffset.dy.clamp(0.0, height);
+
+    Offset center = Offset(width / 2, height / 2);
+    double radio = width <= height ? width / 2 : height / 2;
+    double dist = sqrt(pow(horizontal - center.dx, 2) + pow(vertical - center.dy, 2)) / radio;
+    double rad = (atan2(horizontal - center.dx, vertical - center.dy) / pi + 1) / 2 * 360;
+    _handleColorWheelChangeStart(((rad + 90) % 360).clamp(0, 360), dist.clamp(0, 1));
   }
 
   void _handleGestureEnd(BuildContext context, double height, double width) {
@@ -121,10 +143,18 @@ class ColorPickerArea extends StatelessWidget {
         // );
 
         return GestureDetector(
-            onLongPressDown: ((details) => _handleGesture(details.globalPosition, context, height, width)),
-            onLongPressEnd: ((details) => _handleGestureEnd(context, height, width)),
+          //START
+            onTapDown: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
+            onLongPressStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
+            onVerticalDragStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
+            onHorizontalDragStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
+            //UPDATE
+            onLongPressMoveUpdate: ((details) => _handleGesture(details.globalPosition, context, height, width)),
             onHorizontalDragUpdate: ((details) => _handleGesture(details.globalPosition, context, height, width)),
             onVerticalDragUpdate: ((details) => _handleGesture(details.globalPosition, context, height, width)),
+            //END
+            onTapUp: ((details) => _handleGestureEnd(context, height, width)),
+            onLongPressEnd: ((details) => _handleGestureEnd(context, height, width)),
             onHorizontalDragEnd: ((details) => _handleGestureEnd(context, height, width)),
             onVerticalDragEnd: ((details) => _handleGestureEnd(context, height, width)),
             child: Builder(

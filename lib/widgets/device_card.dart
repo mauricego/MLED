@@ -30,6 +30,7 @@ class _DeviceCard extends State<DeviceCard> {
       widget.toggleState = valueList.elementAt(0);
       widget.brightness = int.parse(valueList.elementAt(1));
       widget.ledMode = int.parse(valueList.elementAt(2));
+      widget.speed = int.parse(valueList.elementAt(3));
     });
   }
 

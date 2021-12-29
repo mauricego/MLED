@@ -10,6 +10,7 @@ class ColorPicker extends StatefulWidget {
     required this.pickerColor,
     required this.onColorChanged,
     required this.onColorChangedEnd,
+    required this.onColorChangedStart,
     this.pickerHsvColor,
     this.onHsvColorChanged,
     this.enableAlpha = false,
@@ -29,6 +30,7 @@ class ColorPicker extends StatefulWidget {
   final Color pickerColor;
   final ValueChanged<Color> onColorChanged;
   final ValueChanged<Color> onColorChangedEnd;
+  final ValueChanged<Color> onColorChangedStart;
   final HSVColor? pickerHsvColor;
   final ValueChanged<HSVColor>? onHsvColorChanged;
   final bool enableAlpha;
@@ -80,6 +82,13 @@ class _ColorPickerState extends State<ColorPicker> {
     widget.onColorChanged(currentHsvColor.toColor());
   }
 
+  void onColorChangingStart(HSVColor color) {
+    setState(() {
+      currentHsvColor = color;
+    });
+    widget.onColorChangedStart(currentHsvColor.toColor());
+  }
+
   void onColorChangingEnd(HSVColor color) {
     setState(() {
       currentHsvColor = color;
@@ -96,6 +105,7 @@ class _ColorPickerState extends State<ColorPicker> {
           currentHsvColor,
           onColorChanging,
           onColorChangingEnd,
+          onColorChangingStart
         ),
       ),
     );
