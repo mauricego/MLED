@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mled/screens/device_screen.dart';
-import 'package:mled/screens/home_screen.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
@@ -12,11 +11,12 @@ import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceCard extends StatefulWidget {
   final String ipAddress;
-  String toggleState;
+  bool toggleState;
   int brightness;
   int ledMode;
   int speed;
-  Color color;
+  Color primaryColor;
+  Color secondaryColor;
   bool connection;
   Timer? brightnessTimer;
   Timer? checkConnectionTimer;
@@ -28,7 +28,8 @@ class DeviceCard extends StatefulWidget {
       required this.brightness,
       required this.ledMode,
       required this.speed,
-      required this.color,
+      required this.primaryColor,
+      required this.secondaryColor,
       required this.connection})
       : super(key: key);
 
@@ -38,13 +39,14 @@ class DeviceCard extends StatefulWidget {
 
 class _DeviceCard extends State<DeviceCard> {
   void _callbackSetState(List valueList) {
-    if (valueList.length == 5) {
+    if (valueList.length == 6) {
       setState(() {
         widget.toggleState = valueList.elementAt(0);
         widget.brightness = valueList.elementAt(1);
         widget.ledMode = valueList.elementAt(2);
         widget.speed = valueList.elementAt(3);
-        widget.color = valueList.elementAt(4);
+        widget.primaryColor = valueList.elementAt(4);
+        widget.secondaryColor = valueList.elementAt(5);
       });
     } else {
       setState(() {
@@ -78,7 +80,8 @@ class _DeviceCard extends State<DeviceCard> {
               widget.brightness = parsedJson['brightness'];
               widget.ledMode = parsedJson['ledMode'];
               widget.speed = parsedJson["speed"];
-              widget.color = Color(parsedJson["color"]);
+              widget.primaryColor = Color(parsedJson["primaryColor"]);
+              widget.secondaryColor = Color(parsedJson["secondaryColor"]);
               widget.connection = true;
             });
           })
@@ -106,10 +109,10 @@ class _DeviceCard extends State<DeviceCard> {
                     ledMode: widget.ledMode,
                     toggleState: widget.toggleState,
                     speed: widget.speed,
-                    color: widget.color,
+                    primaryColor: widget.primaryColor,
+                    secondaryColor: widget.secondaryColor,
                     connection: widget.connection,
                     callbackSetState: _callbackSetState)));
-
       },
       child: Container(
         decoration: BoxDecoration(
@@ -119,7 +122,7 @@ class _DeviceCard extends State<DeviceCard> {
           ),
           boxShadow: [
             BoxShadow(
-              color: widget.toggleState == "ON"
+              color: widget.toggleState
                   ? createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.7))
                   : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
               blurRadius: 35,
@@ -145,7 +148,7 @@ class _DeviceCard extends State<DeviceCard> {
                       boxShadow: [
                         BoxShadow(
                           // color: Colors.green.withAlpha(100),
-                          color: widget.toggleState == "ON"
+                          color: widget.toggleState
                               ? createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.7))
                               : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
                           blurRadius: 15.0,
@@ -156,21 +159,21 @@ class _DeviceCard extends State<DeviceCard> {
                     child: IconButton(
                       icon: const Icon(Icons.power_settings_new),
                       onPressed: () {
-                        if (widget.toggleState == "ON") {
-                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "OFF"}');
+                        if (widget.toggleState) {
+                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": false}');
                           setState(() {
-                            widget.toggleState = "OFF";
+                            widget.toggleState = false;
                           });
                         } else {
-                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "ON"}');
+                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": true}');
                           setState(() {
-                            widget.toggleState = "ON";
+                            widget.toggleState = true;
                           });
                         }
                       },
                       color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
                       highlightColor: Colors.blue,
-                      splashColor: widget.toggleState == "ON"
+                      splashColor: widget.toggleState
                           ? createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.2))
                           : createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.2)),
                     ),
@@ -272,12 +275,12 @@ class _DeviceCard extends State<DeviceCard> {
                   child: IconButton(
                     icon: const Icon(Icons.power_settings_new),
                     color: Colors.grey,
-                    onPressed: () {  },
+                    onPressed: () {},
                   ),
                 ),
                 const SizedBox(width: 20),
                 Text(
-                  "No Connection to "+ widget.ipAddress,
+                  "No Connection to " + widget.ipAddress,
                   textScaleFactor: 1.3,
                   style: const TextStyle(color: Colors.white),
                 ),
@@ -293,16 +296,7 @@ class _DeviceCard extends State<DeviceCard> {
                 thumbColor: const Color.fromRGBO(255, 255, 255, 1),
                 tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
               ),
-              child: SfSlider(
-                  min: 0,
-                  max: 100,
-                  value: 100,
-                  onChanged: (value) {
-                  },
-                  onChangeStart: (value) {
-                  },
-                  onChangeEnd: (value) {
-                  }),
+              child: SfSlider(min: 0, max: 100, value: 100, onChanged: (value) {}, onChangeStart: (value) {}, onChangeEnd: (value) {}),
             )
           ],
         ),

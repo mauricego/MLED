@@ -43,6 +43,7 @@ dependencies:
   syncfusion_flutter_sliders: 19.4.38
   flutter_spinkit: 5.1.0
   sliding_up_panel: 2.0.0+1
+  flutter_awesome_buttons: 1.1.0
 
 dev_dependencies:
   flutter_test:

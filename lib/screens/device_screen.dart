@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_awesome_buttons/flutter_awesome_buttons.dart';
 import "package:mled/colorPicker/colorpicker.dart";
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
@@ -13,12 +14,16 @@ import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String ipAddress;
-  String toggleState;
+  bool toggleState;
   int brightness;
   int ledMode;
   int speed;
-  Color color;
+  Color primaryColor;
+  Color secondaryColor;
   bool connection;
+  bool showLedMode = false;
+  bool showPrimaryColorPicker = false;
+  bool showSecondaryColorPicker = false;
   Timer? brightnessTimer;
   Timer? speedTimer;
   Timer? colorTimer;
@@ -36,7 +41,8 @@ class DeviceScreen extends StatefulWidget {
       required this.ledMode,
       required this.toggleState,
       required this.speed,
-      required this.color,
+      required this.primaryColor,
+      required this.secondaryColor,
       required this.connection})
       : super(key: key);
 
@@ -65,29 +71,28 @@ class _DeviceScreen extends State<DeviceScreen> {
     widget.checkConnectionTimer = (Timer.periodic(const Duration(milliseconds: 5000), (timer) {
       getRequest(widget.ipAddress + "/information")
           .then((value) {
-        var jsonData = value.toString();
-        var parsedJson = json.decode(jsonData);
-        setState(() {
-          widget.toggleState = parsedJson['toggleState'];
-          widget.brightness = parsedJson['brightness'];
-          widget.ledMode = parsedJson['ledMode'];
-          widget.speed = parsedJson["speed"];
-          widget.color = Color(parsedJson["color"]);
-          widget.connection = true;
-        });
-      })
+            var jsonData = value.toString();
+            var parsedJson = json.decode(jsonData);
+            setState(() {
+              widget.toggleState = parsedJson['toggleState'];
+              widget.brightness = parsedJson['brightness'];
+              widget.ledMode = parsedJson['ledMode'];
+              widget.speed = parsedJson["speed"];
+              widget.primaryColor = Color(parsedJson["primaryColor"]);
+              widget.secondaryColor = Color(parsedJson["secondaryColor"]);
+              widget.connection = true;
+            });
+          })
           .timeout(const Duration(seconds: 4))
           .onError((error, stackTrace) {
-        setState(() {
-          widget.connection = false;
-        });
-        widget.callbackSetState([widget.connection]);
-        //go back to home screen
-        Navigator.pop(context);
-      });
+            setState(() {
+              widget.connection = false;
+            });
+            widget.callbackSetState([widget.connection]);
+            //go back to home screen
+            Navigator.pop(context);
+          });
     }));
-
-
 
     return WillPopScope(
         onWillPop: () async {
@@ -109,44 +114,66 @@ class _DeviceScreen extends State<DeviceScreen> {
                 backdropOpacity: 0.3,
                 backdropTapClosesPanel: true,
                 backdropEnabled: true,
-                panel: Container(
-                  padding: const EdgeInsets.all(5),
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(
-                        height: 40,
-                        child: Column(children: <Widget>[
-                          Container(
-                              decoration: const BoxDecoration(
-                                color: Color.fromRGBO(224, 224, 224, 1),
-                                borderRadius: BorderRadius.all(Radius.circular(5)),
-                              ),
-                              margin: const EdgeInsets.all(8.0),
-                              child: const SizedBox(
-                                height: 8,
-                                width: 50,
-                              )),
-                        ]),
-                      ),
-                      SizedBox(
-                        height: 550,
-                        child: ListView.builder(
-                          controller: widget.ledModeScrollController,
-                          scrollDirection: Axis.vertical,
-                          itemCount: ledModes.length,
-                          itemBuilder: (BuildContext context, int index) => _buildLedModeItem(context, index),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                panel: _showPanel(),
                 body: _buildBody())));
+  }
+
+  Widget _showPanel() {
+    if (widget.showLedMode && !widget.showPrimaryColorPicker && !widget.showSecondaryColorPicker) {
+      return Container(
+        padding: const EdgeInsets.all(5),
+        child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: 40,
+              child: Column(children: <Widget>[
+                Container(
+                    decoration: const BoxDecoration(
+                      color: Color.fromRGBO(224, 224, 224, 1),
+                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                    ),
+                    margin: const EdgeInsets.all(8.0),
+                    child: const SizedBox(
+                      height: 8,
+                      width: 50,
+                    )),
+              ]),
+            ),
+            SizedBox(
+              height: 550,
+              child: ListView.builder(
+                controller: widget.ledModeScrollController,
+                scrollDirection: Axis.vertical,
+                itemCount: ledModes.length,
+                itemBuilder: (BuildContext context, int index) => _buildLedModeItem(context, index),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (!widget.showLedMode && widget.showPrimaryColorPicker && !widget.showSecondaryColorPicker) {
+      return _buildPrimaryColorPicker();
+    } else {
+      return _buildSecondaryColorPicker();
+    }
   }
 
   void _showLedModePanel() {
     widget.panelController.show();
     widget.panelController.open();
-    widget.ledModeScrollController.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
+    Timer(const Duration(milliseconds: 40), () {
+      widget.ledModeScrollController.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
+    });
+  }
+
+  void _showPrimaryColorPickerPanel() {
+    widget.panelController.show();
+    widget.panelController.open();
+  }
+
+  void _showSecondaryColorPickerPanel() {
+    widget.panelController.show();
+    widget.panelController.open();
   }
 
   Widget _buildBody() {
@@ -162,7 +189,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                 boxShadow: [
                   BoxShadow(
                     // color: Colors.green.withAlpha(100),
-                    color: widget.toggleState == "ON"
+                    color: widget.toggleState
                         ? createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.7))
                         : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
                     blurRadius: 15.0,
@@ -173,22 +200,23 @@ class _DeviceScreen extends State<DeviceScreen> {
               child: IconButton(
                 icon: const Icon(Icons.power_settings_new),
                 onPressed: () {
-                  if (widget.toggleState == "ON") {
-                    postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "OFF"}');
+                  if (widget.toggleState) {
+                    postRequest(widget.ipAddress + "/toggleState", '{"toggleState": false}');
                     setState(() {
-                      widget.toggleState = "OFF";
+                      widget.toggleState = false;
                     });
                   } else {
-                    postRequest(widget.ipAddress + "/toggleState", '{"toggleState": "ON"}');
+                    postRequest(widget.ipAddress + "/toggleState", '{"toggleState": true}');
                     setState(() {
-                      widget.toggleState = "ON";
+                      widget.toggleState = true;
                     });
                   }
-                  widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
+                  widget.callbackSetState(
+                      [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
                 },
                 color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
                 highlightColor: Colors.blue,
-                splashColor: widget.toggleState == "ON"
+                splashColor: widget.toggleState
                     ? createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.2))
                     : createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.2)),
               ),
@@ -250,7 +278,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.brightness = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
+                    widget.callbackSetState(
+                        [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
                   }),
             ),
           ),
@@ -311,7 +340,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.speed = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
+                    widget.callbackSetState(
+                        [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
                   }),
             ),
           ),
@@ -328,39 +358,131 @@ class _DeviceScreen extends State<DeviceScreen> {
         const SizedBox(height: 15),
         _buildLedModeButton(),
         const SizedBox(height: 50),
-        _buildColorPicker(),
+        PrimaryButton(
+          title: "Primary Color",
+          onPressed: () {
+            setState(() {
+              widget.showPrimaryColorPicker = true;
+              widget.showSecondaryColorPicker = false;
+              widget.showLedMode = false;
+            });
+            _showPrimaryColorPickerPanel();
+          },
+        ),
+        const SizedBox(height: 50),
+        PrimaryButton(
+          title: "Secondary Color",
+          onPressed: () {
+            setState(() {
+              widget.showPrimaryColorPicker = false;
+              widget.showSecondaryColorPicker = true;
+              widget.showLedMode = false;
+            });
+            _showSecondaryColorPickerPanel();
+          },
+        )
       ],
     );
   }
 
-  Widget _buildColorPicker() {
-    return ColorPicker(
-      portraitOnly: true,
-      pickerColor: widget.color,
-      colorPickerWidth: 300,
-      onColorChangedStart: (Color value) {
-        widget.colorTimer?.cancel();
-        widget.colorTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-          colorUpdate();
-        });
-        setState(() {
-          widget.color = value;
-        });
-      },
-      onColorChanged: (Color value) {
-        setState(() {
-          widget.color = value;
-        });
-      },
-      onColorChangedEnd: (Color value) {
-        widget.colorTimer?.cancel();
-        colorUpdate();
-        setState(() {
-          widget.color = value;
-        });
-        widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
-      },
-    );
+  Widget _buildPrimaryColorPicker() {
+    return Container(
+        padding: const EdgeInsets.all(5),
+        child: Column(children: <Widget>[
+          SizedBox(
+            height: 40,
+            child: Column(children: <Widget>[
+              Container(
+                  decoration: const BoxDecoration(
+                    color: Color.fromRGBO(224, 224, 224, 1),
+                    borderRadius: BorderRadius.all(Radius.circular(5)),
+                  ),
+                  margin: const EdgeInsets.all(8.0),
+                  child: const SizedBox(
+                    height: 8,
+                    width: 50,
+                  )),
+            ]),
+          ),
+          ColorPicker(
+            portraitOnly: true,
+            pickerColor: widget.primaryColor,
+            colorPickerWidth: 300,
+            onColorChangedStart: (Color value) {
+              widget.colorTimer?.cancel();
+              widget.colorTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+                colorUpdate();
+              });
+              setState(() {
+                widget.primaryColor = value;
+              });
+            },
+            onColorChanged: (Color value) {
+              setState(() {
+                widget.primaryColor = value;
+              });
+            },
+            onColorChangedEnd: (Color value) {
+              widget.colorTimer?.cancel();
+              colorUpdate();
+              setState(() {
+                widget.primaryColor = value;
+              });
+              widget.callbackSetState(
+                  [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+            },
+          )
+        ]));
+  }
+
+  Widget _buildSecondaryColorPicker() {
+    return Container(
+        padding: const EdgeInsets.all(5),
+        child: Column(children: <Widget>[
+          SizedBox(
+            height: 40,
+            child: Column(children: <Widget>[
+              Container(
+                  decoration: const BoxDecoration(
+                    color: Color.fromRGBO(224, 224, 224, 1),
+                    borderRadius: BorderRadius.all(Radius.circular(5)),
+                  ),
+                  margin: const EdgeInsets.all(8.0),
+                  child: const SizedBox(
+                    height: 8,
+                    width: 50,
+                  )),
+            ]),
+          ),
+          ColorPicker(
+            portraitOnly: true,
+            pickerColor: widget.secondaryColor,
+            colorPickerWidth: 300,
+            onColorChangedStart: (Color value) {
+              widget.colorTimer?.cancel();
+              widget.colorTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+                colorUpdate();
+              });
+              setState(() {
+                widget.secondaryColor = value;
+              });
+            },
+            onColorChanged: (Color value) {
+              setState(() {
+                widget.secondaryColor = value;
+              });
+            },
+            onColorChangedEnd: (Color value) {
+              widget.colorTimer?.cancel();
+              colorUpdate();
+              setState(() {
+                widget.secondaryColor = value;
+              });
+              widget.callbackSetState(
+                  [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+            },
+          ),
+        ]));
   }
 
   Widget _buildLedModeButton() {
@@ -385,6 +507,11 @@ class _DeviceScreen extends State<DeviceScreen> {
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 onTap: () {
+                  setState(() {
+                    widget.showPrimaryColorPicker = false;
+                    widget.showSecondaryColorPicker = false;
+                    widget.showLedMode = true;
+                  });
                   _showLedModePanel();
                 },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
@@ -417,7 +544,8 @@ class _DeviceScreen extends State<DeviceScreen> {
                     widget.ledMode = index;
                     widget.selectedModeIndicator = Colors.yellow;
                   });
-                  widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
+                  widget.callbackSetState(
+                      [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
                 },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
                 leading: Container(
@@ -449,6 +577,7 @@ class _DeviceScreen extends State<DeviceScreen> {
   }
 
   void colorUpdate() {
-    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.color.value.toString() + '", "colorSide": "' + widget.color.toString() + '"}');
+    postRequest(widget.ipAddress + "/color",
+        '{"primaryColor": "' + widget.primaryColor.value.toString() + '", "secondaryColor": "' + widget.secondaryColor.value.toString() + '"}');
   }
 }

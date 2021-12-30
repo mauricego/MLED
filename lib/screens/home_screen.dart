@@ -7,7 +7,6 @@ import 'package:mled/tools/api_request.dart';
 import 'package:mled/widgets/device_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -36,70 +35,72 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Scaffold(
-          appBar: AppBar(
-            leading: const Icon(Icons.menu),
-            title: const Text('Devices'),
-            actions: const [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Icon(Icons.settings),
-              ),
-            ],
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(
+        leading: const Icon(Icons.menu),
+        title: const Text('Devices'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(Icons.settings),
           ),
-          body: _buildListViewOfDevices());
+        ],
+      ),
+      body: _buildListViewOfDevices());
 
   ListView _buildListViewOfDevices() {
     List<FutureBuilder> containers = <FutureBuilder>[];
 
     for (String device in deviceList) {
-      containers.add(FutureBuilder<String>(
-        future: getRequest(device + "/information").timeout(const Duration(seconds: 2)).onError((error, stackTrace) {
-          return Future.error(error!);
-        }),
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          if (snapshot.connectionState == ConnectionState.done && !snapshot.hasError) {
-            var jsonData = snapshot.data.toString();
-            var parsedJson = json.decode(jsonData);
-            return DeviceCard(
-              ipAddress: device,
-              toggleState: parsedJson['toggleState'],
-              brightness: parsedJson['brightness'],
-              ledMode: parsedJson['ledMode'],
-              speed: parsedJson["speed"],
-              color: Color(parsedJson["color"]),
-              connection: true,
-            );
-          } else if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: Column(
-                children: const <Widget>[
-                  SizedBox(
-                    height: 250,
-                  ),
-                  SpinKitSpinningLines(
-                    color: Colors.blue,
-                    size: 100,
-                    lineWidth: 5.0,
-                    itemCount: 5,
-                  ),
-                ],
-              ),
-            );
-          } else {
-            return DeviceCard(
-              ipAddress: device,
-              toggleState: "OFF",
-              brightness: 255,
-              ledMode: 0,
-              speed: 2000,
-              color: const Color(0x00720319),
-              connection: false,
-            );
-          }
-        },
-      ),
+      containers.add(
+        FutureBuilder<String>(
+          future: getRequest(device + "/information").timeout(const Duration(seconds: 2)).onError((error, stackTrace) {
+            return Future.error(error!);
+          }),
+          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+            if (snapshot.connectionState == ConnectionState.done && !snapshot.hasError) {
+              var jsonData = snapshot.data.toString();
+              var parsedJson = json.decode(jsonData);
+              return DeviceCard(
+                ipAddress: device,
+                toggleState: parsedJson['toggleState'],
+                brightness: parsedJson['brightness'],
+                ledMode: parsedJson['ledMode'],
+                speed: parsedJson["speed"],
+                primaryColor: Color(parsedJson["primaryColor"]),
+                secondaryColor: Color(parsedJson["secondaryColor"]),
+                connection: true,
+              );
+            } else if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: Column(
+                  children: const <Widget>[
+                    SizedBox(
+                      height: 250,
+                    ),
+                    SpinKitSpinningLines(
+                      color: Colors.blue,
+                      size: 100,
+                      lineWidth: 5.0,
+                      itemCount: 5,
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              return DeviceCard(
+                ipAddress: device,
+                toggleState: false,
+                brightness: 255,
+                ledMode: 0,
+                speed: 2000,
+                primaryColor: const Color(0x00720319),
+                secondaryColor: const Color(0x00720319),
+                connection: false,
+              );
+            }
+          },
+        ),
       );
     }
 
