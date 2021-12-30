@@ -1,15 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import "package:mled/colorPicker/colorpicker.dart";
-import 'package:mled/colorPicker/palette.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
 import 'package:mled/tools/led_modes.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:syncfusion_flutter_sliders/sliders.dart';
 import "package:syncfusion_flutter_core/theme.dart";
+import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class DeviceScreen extends StatefulWidget {
   final String ipAddress;
@@ -17,14 +17,16 @@ class DeviceScreen extends StatefulWidget {
   int brightness;
   int ledMode;
   int speed;
-  Color color = Color(0xff3a42ff);
+  Color color;
+  bool connection;
   Timer? brightnessTimer;
   Timer? speedTimer;
   Timer? colorTimer;
+  Timer? checkConnectionTimer;
   ScrollController ledModeScrollController = ScrollController();
   PanelController panelController = PanelController();
   Color selectedModeIndicator = Colors.yellow;
-  final ValueChanged<List<String>> callbackSetState;
+  final ValueChanged<List> callbackSetState;
 
   DeviceScreen(
       {Key? key,
@@ -33,7 +35,9 @@ class DeviceScreen extends StatefulWidget {
       required this.brightness,
       required this.ledMode,
       required this.toggleState,
-      required this.speed})
+      required this.speed,
+      required this.color,
+      required this.connection})
       : super(key: key);
 
   @override
@@ -47,58 +51,97 @@ class _DeviceScreen extends State<DeviceScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => WillPopScope(
-      onWillPop: () async {
-        return true;
-      },
-      child: Scaffold(
-          appBar: AppBar(
-            title: Text(widget.ipAddress),
-          ),
-          body: SlidingUpPanel(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24.0),
-                topRight: Radius.circular(24.0),
-              ),
-              controller: widget.panelController,
-              minHeight: 0,
-              maxHeight: 600,
-              color: const Color.fromRGBO(40, 41, 61, 1),
-              backdropOpacity: 0.3,
-              backdropTapClosesPanel: true,
-              backdropEnabled: true,
-              panel: Container(
-                padding: const EdgeInsets.all(5),
-                child: Column(
-                  children: <Widget>[
-                    SizedBox(
-                      height: 40,
-                      child: Column(children: <Widget>[
-                        Container(
-                            decoration: const BoxDecoration(
-                              color: Color.fromRGBO(224, 224, 224, 1),
-                              borderRadius: BorderRadius.all(Radius.circular(5)),
-                            ),
-                            margin: const EdgeInsets.all(8.0),
-                            child: const SizedBox(
-                              height: 8,
-                              width: 50,
-                            )),
-                      ]),
-                    ),
-                    SizedBox(
-                      height: 550,
-                      child: ListView.builder(
-                        controller: widget.ledModeScrollController,
-                        scrollDirection: Axis.vertical,
-                        itemCount: ledModes.length,
-                        itemBuilder: (BuildContext context, int index) => _buildLedModeItem(context, index),
-                      ),
-                    ),
-                  ],
+  void dispose() {
+    super.dispose();
+    widget.brightnessTimer?.cancel();
+    widget.colorTimer?.cancel();
+    widget.speedTimer?.cancel();
+    widget.checkConnectionTimer?.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    widget.checkConnectionTimer?.cancel();
+    widget.checkConnectionTimer = (Timer.periodic(const Duration(milliseconds: 5000), (timer) {
+      getRequest(widget.ipAddress + "/information")
+          .then((value) {
+        var jsonData = value.toString();
+        var parsedJson = json.decode(jsonData);
+        setState(() {
+          widget.toggleState = parsedJson['toggleState'];
+          widget.brightness = parsedJson['brightness'];
+          widget.ledMode = parsedJson['ledMode'];
+          widget.speed = parsedJson["speed"];
+          widget.color = Color(parsedJson["color"]);
+          widget.connection = true;
+        });
+      })
+          .timeout(const Duration(seconds: 4))
+          .onError((error, stackTrace) {
+        setState(() {
+          widget.connection = false;
+        });
+        widget.callbackSetState([widget.connection]);
+        //go back to home screen
+        Navigator.pop(context);
+      });
+    }));
+
+
+
+    return WillPopScope(
+        onWillPop: () async {
+          return true;
+        },
+        child: Scaffold(
+            appBar: AppBar(
+              title: Text(widget.ipAddress),
+            ),
+            body: SlidingUpPanel(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24.0),
+                  topRight: Radius.circular(24.0),
                 ),
-              ),
-              body: _buildBody())));
+                controller: widget.panelController,
+                minHeight: 0,
+                maxHeight: 600,
+                color: const Color.fromRGBO(40, 41, 61, 1),
+                backdropOpacity: 0.3,
+                backdropTapClosesPanel: true,
+                backdropEnabled: true,
+                panel: Container(
+                  padding: const EdgeInsets.all(5),
+                  child: Column(
+                    children: <Widget>[
+                      SizedBox(
+                        height: 40,
+                        child: Column(children: <Widget>[
+                          Container(
+                              decoration: const BoxDecoration(
+                                color: Color.fromRGBO(224, 224, 224, 1),
+                                borderRadius: BorderRadius.all(Radius.circular(5)),
+                              ),
+                              margin: const EdgeInsets.all(8.0),
+                              child: const SizedBox(
+                                height: 8,
+                                width: 50,
+                              )),
+                        ]),
+                      ),
+                      SizedBox(
+                        height: 550,
+                        child: ListView.builder(
+                          controller: widget.ledModeScrollController,
+                          scrollDirection: Axis.vertical,
+                          itemCount: ledModes.length,
+                          itemBuilder: (BuildContext context, int index) => _buildLedModeItem(context, index),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                body: _buildBody())));
+  }
 
   void _showLedModePanel() {
     widget.panelController.show();
@@ -141,8 +184,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                       widget.toggleState = "ON";
                     });
                   }
-                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
-
+                  widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
                 },
                 color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
                 highlightColor: Colors.blue,
@@ -208,8 +250,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.brightness = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
-
+                    widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
                   }),
             ),
           ),
@@ -247,11 +288,11 @@ class _DeviceScreen extends State<DeviceScreen> {
               ),
               child: SfSlider(
                   min: 0,
-                  max: 65535,
+                  max: 5000,
                   value: widget.speed.toDouble(),
                   enableTooltip: true,
                   tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
-                    return ((actualValue / 65535) * 100).round().toString() + " %";
+                    return ((actualValue / 5000) * 100).round().toString() + " %";
                   },
                   onChanged: (value) {
                     setState(() {
@@ -260,7 +301,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                   },
                   onChangeStart: (value) {
                     widget.speedTimer?.cancel();
-                    widget.speedTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                    widget.speedTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
                       speedUpdate();
                     });
                   },
@@ -270,8 +311,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     setState(() {
                       widget.speed = value.round();
                     });
-                    widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
-
+                    widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
                   }),
             ),
           ),
@@ -298,9 +338,9 @@ class _DeviceScreen extends State<DeviceScreen> {
       portraitOnly: true,
       pickerColor: widget.color,
       colorPickerWidth: 300,
-      onColorChangedStart: (Color value){
+      onColorChangedStart: (Color value) {
         widget.colorTimer?.cancel();
-        widget.colorTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        widget.colorTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
           colorUpdate();
         });
         setState(() {
@@ -314,11 +354,11 @@ class _DeviceScreen extends State<DeviceScreen> {
       },
       onColorChangedEnd: (Color value) {
         widget.colorTimer?.cancel();
-        brightnessUpdate();
+        colorUpdate();
         setState(() {
           widget.color = value;
         });
-        widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+        widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
       },
     );
   }
@@ -377,7 +417,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     widget.ledMode = index;
                     widget.selectedModeIndicator = Colors.yellow;
                   });
-                  widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
+                  widget.callbackSetState([widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.color]);
                 },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
                 leading: Container(
@@ -398,18 +438,17 @@ class _DeviceScreen extends State<DeviceScreen> {
     } else {
       return const Icon(Icons.light_mode, color: Colors.white);
     }
-    // return Icon(Icons.light_mode, color: widget.selectedModeIndicator);
   }
 
   void brightnessUpdate() {
-    changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
+    postRequest(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
   }
 
   void speedUpdate() {
-    changeBrightness(widget.ipAddress + "/speed", '{"speed": "' + widget.speed.toString() + '"}');
+    postRequest(widget.ipAddress + "/speed", '{"speed": "' + widget.speed.toString() + '"}');
   }
 
   void colorUpdate() {
-    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.color.toString() + '", "colorSide": "' + widget.color.toString() + '"}');
+    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.color.value.toString() + '", "colorSide": "' + widget.color.toString() + '"}');
   }
 }
