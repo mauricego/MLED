@@ -144,7 +144,7 @@ class ColorPickerArea extends StatelessWidget {
 
         return GestureDetector(
           //START
-            onTapDown: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
+          //   onTapDown: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
             onLongPressStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
             onVerticalDragStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
             onHorizontalDragStart: ((details) => _handleGestureStart(details.globalPosition, context, height, width)),
@@ -153,7 +153,7 @@ class ColorPickerArea extends StatelessWidget {
             onHorizontalDragUpdate: ((details) => _handleGesture(details.globalPosition, context, height, width)),
             onVerticalDragUpdate: ((details) => _handleGesture(details.globalPosition, context, height, width)),
             //END
-            onTapUp: ((details) => _handleGestureEnd(context, height, width)),
+            // onTapUp: ((details) => _handleGestureEnd(context, height, width)),
             onLongPressEnd: ((details) => _handleGestureEnd(context, height, width)),
             onHorizontalDragEnd: ((details) => _handleGestureEnd(context, height, width)),
             onVerticalDragEnd: ((details) => _handleGestureEnd(context, height, width)),

@@ -13,16 +13,15 @@ import "package:syncfusion_flutter_core/theme.dart";
 
 class DeviceScreen extends StatefulWidget {
   final String ipAddress;
-  String toggleState = "ON";
-  int brightness = 255;
-  int ledMode = 0;
-  int speed = 0;
-  Color pickerColor = Color(0xff3a42ff);
-
+  String toggleState;
+  int brightness;
+  int ledMode;
+  int speed;
+  Color color = Color(0xff3a42ff);
   Timer? brightnessTimer;
   Timer? speedTimer;
   Timer? colorTimer;
-  ScrollController controller = ScrollController();
+  ScrollController ledModeScrollController = ScrollController();
   PanelController panelController = PanelController();
   Color selectedModeIndicator = Colors.yellow;
   final ValueChanged<List<String>> callbackSetState;
@@ -90,10 +89,10 @@ class _DeviceScreen extends State<DeviceScreen> {
                     SizedBox(
                       height: 550,
                       child: ListView.builder(
-                        controller: widget.controller,
+                        controller: widget.ledModeScrollController,
                         scrollDirection: Axis.vertical,
                         itemCount: ledModes.length,
-                        itemBuilder: (BuildContext context, int index) => _buildModeItem(context, index),
+                        itemBuilder: (BuildContext context, int index) => _buildLedModeItem(context, index),
                       ),
                     ),
                   ],
@@ -104,7 +103,7 @@ class _DeviceScreen extends State<DeviceScreen> {
   void _showLedModePanel() {
     widget.panelController.show();
     widget.panelController.open();
-    widget.controller.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
+    widget.ledModeScrollController.animateTo((widget.ledMode * 60) - 30, duration: const Duration(milliseconds: 600), curve: Curves.decelerate);
   }
 
   Widget _buildBody() {
@@ -200,12 +199,12 @@ class _DeviceScreen extends State<DeviceScreen> {
                   onChangeStart: (value) {
                     widget.brightnessTimer?.cancel();
                     widget.brightnessTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-                      brightnessTimer();
+                      brightnessUpdate();
                     });
                   },
                   onChangeEnd: (value) {
                     widget.brightnessTimer?.cancel();
-                    brightnessTimer();
+                    brightnessUpdate();
                     setState(() {
                       widget.brightness = value.round();
                     });
@@ -262,12 +261,12 @@ class _DeviceScreen extends State<DeviceScreen> {
                   onChangeStart: (value) {
                     widget.speedTimer?.cancel();
                     widget.speedTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-                      speedTimer();
+                      speedUpdate();
                     });
                   },
                   onChangeEnd: (value) {
                     widget.speedTimer?.cancel();
-                    speedTimer();
+                    speedUpdate();
                     setState(() {
                       widget.speed = value.round();
                     });
@@ -277,7 +276,7 @@ class _DeviceScreen extends State<DeviceScreen> {
             ),
           ),
         ]),
-        const SizedBox(height: 15),
+        const SizedBox(height: 25),
         const Text(
           "Led animation mode",
           textScaleFactor: 1.2,
@@ -287,7 +286,8 @@ class _DeviceScreen extends State<DeviceScreen> {
           ),
         ),
         const SizedBox(height: 15),
-        _buildModeButton(),
+        _buildLedModeButton(),
+        const SizedBox(height: 50),
         _buildColorPicker(),
       ],
     );
@@ -296,41 +296,34 @@ class _DeviceScreen extends State<DeviceScreen> {
   Widget _buildColorPicker() {
     return ColorPicker(
       portraitOnly: true,
-      pickerColor: widget.pickerColor,
+      pickerColor: widget.color,
       colorPickerWidth: 300,
       onColorChangedStart: (Color value){
         widget.colorTimer?.cancel();
         widget.colorTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-          colorTimer();
+          colorUpdate();
         });
-        print("START " + value.toString());
         setState(() {
-          widget.pickerColor = value;
+          widget.color = value;
         });
       },
       onColorChanged: (Color value) {
         setState(() {
-          widget.pickerColor = value;
+          widget.color = value;
         });
       },
       onColorChangedEnd: (Color value) {
         widget.colorTimer?.cancel();
-        brightnessTimer();
+        brightnessUpdate();
         setState(() {
-          widget.pickerColor = value;
+          widget.color = value;
         });
         widget.callbackSetState([widget.toggleState, widget.brightness.toString(), widget.ledMode.toString(), widget.speed.toString()]);
-
-        print("END " + value.toString());
       },
     );
   }
 
-  void colorTimer() {
-    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.pickerColor.toString() + '", "colorSide": "' + widget.pickerColor.toString() + '"}');
-  }
-
-  Widget _buildModeButton() {
+  Widget _buildLedModeButton() {
     return Container(
         height: 60,
         width: 200,
@@ -358,7 +351,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                 leading: Container(
                   padding: const EdgeInsets.only(right: 12.0),
                   decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
-                  child: _buildChild(widget.ledMode),
+                  child: _buildLedModeChild(widget.ledMode),
                 ),
                 title: Text(
                   ledModes[widget.ledMode],
@@ -366,7 +359,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                 ))));
   }
 
-  Widget _buildModeItem(BuildContext context, int index) {
+  Widget _buildLedModeItem(BuildContext context, int index) {
     return (Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -390,7 +383,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                 leading: Container(
                   padding: const EdgeInsets.only(right: 12.0),
                   decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
-                  child: _buildChild(index),
+                  child: _buildLedModeChild(index),
                 ),
                 title: Text(
                   ledModes[index],
@@ -398,7 +391,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                 )))));
   }
 
-  Widget _buildChild(int index) {
+  Widget _buildLedModeChild(int index) {
     if (widget.ledMode == index) {
       //scroll to selected mode
       return Icon(Icons.light_mode, color: widget.selectedModeIndicator);
@@ -408,11 +401,15 @@ class _DeviceScreen extends State<DeviceScreen> {
     // return Icon(Icons.light_mode, color: widget.selectedModeIndicator);
   }
 
-  void brightnessTimer() {
+  void brightnessUpdate() {
     changeBrightness(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
   }
 
-  void speedTimer() {
+  void speedUpdate() {
     changeBrightness(widget.ipAddress + "/speed", '{"speed": "' + widget.speed.toString() + '"}');
+  }
+
+  void colorUpdate() {
+    postRequest(widget.ipAddress + "/color", '{"color": "' + widget.color.toString() + '", "colorSide": "' + widget.color.toString() + '"}');
   }
 }
