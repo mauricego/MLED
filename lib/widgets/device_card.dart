@@ -44,7 +44,7 @@ class _DeviceCard extends State<DeviceCard> {
         widget.toggleState = valueList.elementAt(0);
         widget.brightness = valueList.elementAt(1);
         widget.ledMode = valueList.elementAt(2);
-        widget.speed = valueList.elementAt(3);
+        widget.speed = 5000 - int.parse(valueList.elementAt(3).toString());
         widget.primaryColor = valueList.elementAt(4);
         widget.secondaryColor = valueList.elementAt(5);
       });
@@ -79,7 +79,7 @@ class _DeviceCard extends State<DeviceCard> {
               widget.toggleState = parsedJson['toggleState'];
               widget.brightness = parsedJson['brightness'];
               widget.ledMode = parsedJson['ledMode'];
-              widget.speed = parsedJson["speed"];
+              widget.speed = 5000 - int.parse(parsedJson["speed"].toString());
               widget.primaryColor = Color(parsedJson["primaryColor"]);
               widget.secondaryColor = Color(parsedJson["secondaryColor"]);
               widget.connection = true;
@@ -108,7 +108,7 @@ class _DeviceCard extends State<DeviceCard> {
                     brightness: widget.brightness,
                     ledMode: widget.ledMode,
                     toggleState: widget.toggleState,
-                    speed: widget.speed,
+                    speed: 5000 - widget.speed,
                     primaryColor: widget.primaryColor,
                     secondaryColor: widget.secondaryColor,
                     connection: widget.connection,

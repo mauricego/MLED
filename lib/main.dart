@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import "package:hive_flutter/hive_flutter.dart";
 import 'package:mled/screens/home_screen.dart';
 import 'package:mled/screens/setup_screen.dart';
 import 'package:mled/tools/color_convert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+main() async {
   runApp(const MaterialApp(
     home: MyApp(),
   ));
@@ -23,6 +24,11 @@ class _MyApp extends State<MyApp> {
   late bool isFirstLaunch = false;
 
   Future<bool> _start() async {
+    await Hive.initFlutter();
+    var box = await Hive.openBox('mledBox');
+
+    box.put("isFirstLaunch", false);
+
     await SharedPreferences.getInstance().then((prefs) {
       if (prefs.getBool("isFirstLaunch") == null) {
         //false for dev

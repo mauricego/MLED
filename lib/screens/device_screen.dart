@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_awesome_buttons/flutter_awesome_buttons.dart';
 import "package:mled/colorPicker/colorpicker.dart";
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
@@ -77,7 +76,7 @@ class _DeviceScreen extends State<DeviceScreen> {
               widget.toggleState = parsedJson['toggleState'];
               widget.brightness = parsedJson['brightness'];
               widget.ledMode = parsedJson['ledMode'];
-              widget.speed = parsedJson["speed"];
+              widget.speed = 5000 - int.parse(parsedJson["speed"].toString());
               widget.primaryColor = Color(parsedJson["primaryColor"]);
               widget.secondaryColor = Color(parsedJson["secondaryColor"]);
               widget.connection = true;
@@ -358,29 +357,10 @@ class _DeviceScreen extends State<DeviceScreen> {
         const SizedBox(height: 15),
         _buildLedModeButton(),
         const SizedBox(height: 50),
-        PrimaryButton(
-          title: "Primary Color",
-          onPressed: () {
-            setState(() {
-              widget.showPrimaryColorPicker = true;
-              widget.showSecondaryColorPicker = false;
-              widget.showLedMode = false;
-            });
-            _showPrimaryColorPickerPanel();
-          },
-        ),
+        _buildPrimaryColorPickerButton(),
         const SizedBox(height: 50),
-        PrimaryButton(
-          title: "Secondary Color",
-          onPressed: () {
-            setState(() {
-              widget.showPrimaryColorPicker = false;
-              widget.showSecondaryColorPicker = true;
-              widget.showLedMode = false;
-            });
-            _showSecondaryColorPickerPanel();
-          },
-        )
+        _buildSecondaryColorPickerButton(),
+        const SizedBox(height: 50),
       ],
     );
   }
@@ -485,6 +465,88 @@ class _DeviceScreen extends State<DeviceScreen> {
         ]));
   }
 
+  Widget _buildPrimaryColorPickerButton() {
+    return Container(
+        height: 60,
+        width: 200,
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 20.0, spreadRadius: 20, offset: Offset(0, 5)),
+          ],
+        ),
+        child: Card(
+            color: createMaterialColor(const Color.fromRGBO(85, 87, 112, 1)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2.0),
+            child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                onTap: () {
+                  setState(() {
+                    widget.showPrimaryColorPicker = true;
+                    widget.showSecondaryColorPicker = false;
+                    widget.showLedMode = false;
+                  });
+                  _showPrimaryColorPickerPanel();
+                },
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
+                leading: Container(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
+                  child: Icon(Icons.circle, color: widget.primaryColor.withAlpha(1000),),
+                ),
+                title: const Text(
+                  "Primary Color",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ))));
+  }
+
+  Widget _buildSecondaryColorPickerButton() {
+    return Container(
+        height: 60,
+        width: 200,
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 20.0, spreadRadius: 20, offset: Offset(0, 5)),
+          ],
+        ),
+        child: Card(
+            color: createMaterialColor(const Color.fromRGBO(85, 87, 112, 1)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2.0),
+            child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                onTap: () {
+                  setState(() {
+                    widget.showPrimaryColorPicker = false;
+                    widget.showSecondaryColorPicker = true;
+                    widget.showLedMode = false;
+                  });
+                  _showSecondaryColorPickerPanel();
+                },
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
+                leading: Container(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  decoration: const BoxDecoration(border: Border(right: BorderSide(width: 1.0, color: Colors.white24))),
+                  child: Icon(Icons.circle, color: widget.secondaryColor.withAlpha(1000),),
+                ),
+                title: const Text(
+                  "Secondary Color",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ))));
+  }
+
   Widget _buildLedModeButton() {
     return Container(
         height: 60,
@@ -573,7 +635,7 @@ class _DeviceScreen extends State<DeviceScreen> {
   }
 
   void speedUpdate() {
-    postRequest(widget.ipAddress + "/speed", '{"speed": "' + widget.speed.toString() + '"}');
+    postRequest(widget.ipAddress + "/speed", '{"speed": "' + (5000- widget.speed).toString() + '"}');
   }
 
   void colorUpdate() {
