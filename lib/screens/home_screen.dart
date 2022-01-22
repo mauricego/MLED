@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mled/screens/setup_screen.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/widgets/device_card.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -17,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreen extends State<HomeScreen> {
   List<String> deviceList = <String>[];
   List deviceTimers = [];
+  late Box box;
 
   @override
   initState() {
@@ -25,12 +27,10 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   _getIpAddress() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    //for dev
+    box = await Hive.openBox("mled");
+
     setState(() {
-      if (prefs.getStringList("deviceList") != null) {
-        deviceList = prefs.getStringList("deviceList")!;
-      }
+      deviceList = box.get("deviceList");
     });
   }
 
@@ -39,10 +39,15 @@ class _HomeScreen extends State<HomeScreen> {
       appBar: AppBar(
         leading: const Icon(Icons.menu),
         title: const Text('Devices'),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Icon(Icons.settings),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SetupScreen()));
+              },
+            ),
           ),
         ],
       ),
