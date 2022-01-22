@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:mled/tools/edge_alert.dart';
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mled/screens/home_screen.dart';
+import 'package:mled/tools/edge_alert.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 //ignore: must_be_immutable
 class Bluetooth extends StatefulWidget {
@@ -26,11 +26,20 @@ class _Bluetooth extends State<Bluetooth> {
   List<String> deviceList = <String>[];
   bool gotMatchingIpAddressNotify = false;
   String ipAddress = "0.0.0.0";
+  late Box box;
 
   @override
-  void initState() {
+  initState() async {
     super.initState();
+    await Hive.initFlutter();
+    box = await Hive.openBox("mled");
     _requestPermissionAndScan();
+  }
+
+  @override
+  void dispose() {
+    box.close();
+    super.dispose();
   }
 
   @override
@@ -69,8 +78,7 @@ class _Bluetooth extends State<Bluetooth> {
             child: Row(
               children: <Widget>[
                 Expanded(child: Center(child: Text(device.name == '' ? '(unknown device)' : device.name))),
-                FlatButton(
-                  color: Colors.blue,
+                TextButton(
                   child: const Text(
                     'Connect',
                     style: TextStyle(color: Colors.white),
@@ -168,18 +176,16 @@ class _Bluetooth extends State<Bluetooth> {
   }
 
   _storeDevices() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList("deviceList", deviceList);
+    box.put("devices", deviceList);
   }
 
   _getStoredDevices() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? deviceList = prefs.getStringList("deviceList");
+    List<String>? deviceList = box.get("devices");
 
     if (deviceList == null) {
-      prefs.setStringList("deviceList", this.deviceList);
+      box.put("devices", this.deviceList);
     } else {
-      deviceList = deviceList;
+      this.deviceList = deviceList;
     }
   }
 
@@ -249,7 +255,7 @@ class _Bluetooth extends State<Bluetooth> {
           duration: EdgeAlert.LENGTH_SHORT,
           icon: Icons.done);
       //go back to home screen
-      await SharedPreferences.getInstance().then((prefs) => prefs.setBool("isFirstLaunch", false));
+      await box.put("isFirstLaunch", false);
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),

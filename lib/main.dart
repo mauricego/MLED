@@ -4,9 +4,9 @@ import "package:hive_flutter/hive_flutter.dart";
 import 'package:mled/screens/home_screen.dart';
 import 'package:mled/screens/setup_screen.dart';
 import 'package:mled/tools/color_convert.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 main() async {
+  await Hive.initFlutter();
   runApp(const MaterialApp(
     home: MyApp(),
   ));
@@ -24,22 +24,15 @@ class _MyApp extends State<MyApp> {
   late bool isFirstLaunch = false;
 
   Future<bool> _start() async {
-    await Hive.initFlutter();
-    var box = await Hive.openBox('mledBox');
+    var box = await Hive.openBox('mled');
 
-    box.put("isFirstLaunch", false);
-
-    await SharedPreferences.getInstance().then((prefs) {
-      if (prefs.getBool("isFirstLaunch") == null) {
-        //false for dev
-        prefs.setBool("isFirstLaunch", false);
-        //false for dev
-        isFirstLaunch = false;
-      } else {
-        isFirstLaunch = prefs.getBool("isFirstLaunch")!;
-      }
-    });
-    //TODO: emulator can't use bluetooth so don't show this screen at startup for development
+    if (box.get("isFirstLaunch") == null) {
+      box.put("isFirstLaunch", true);
+      isFirstLaunch = true;
+    } else {
+      isFirstLaunch = box.get("isFirstLaunch");
+    }
+    box.close();
     return Future.value(isFirstLaunch);
   }
 
@@ -52,18 +45,14 @@ class _MyApp extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: "MLED",
-
         theme: ThemeData(
           primarySwatch: createMaterialColor(const Color.fromRGBO(27, 28, 39, 1)),
           scaffoldBackgroundColor: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
-
           buttonTheme: const ButtonThemeData(
             buttonColor: Colors.blue,
             textTheme: ButtonTextTheme.primary,
           ),
         ),
-
-
         home: FutureBuilder<bool>(
             future: _start(), // async work
             builder: (context, AsyncSnapshot<bool> snapshot) {
