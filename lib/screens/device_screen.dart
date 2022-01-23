@@ -110,7 +110,6 @@ class _DeviceScreen extends State<DeviceScreen> {
                       resBody["command"] = "reset_nvs";
                       resBody["password"] = "b055684c-68d4-41e5-ac56-d140a2668cd4";
                       String str = json.encode(resBody);
-                      print(str);
                       postRequest(widget.ipAddress + "/reset", str);
                     },
                   ),
@@ -648,19 +647,25 @@ class _DeviceScreen extends State<DeviceScreen> {
 
   void brightnessUpdate() {
     var resBody = {};
-    resBody["brightness"] = widget.brightness.toString();
+    if (widget.brightness == 0) {
+      resBody["brightness"] = "1";
+    } else {
+      resBody["brightness"] = (widget.brightness).toString();
+    }
     resBody["end"] = false;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/brightness", str);
   }
 
   void brightnessUpdateEnd() {
     var resBody = {};
-    resBody["brightness"] = (widget.brightness).toString();
+    if (widget.brightness == 0) {
+      resBody["brightness"] = "1";
+    } else {
+      resBody["brightness"] = (widget.brightness).toString();
+    }
     resBody["end"] = true;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/brightness", str);
 
   }
@@ -670,16 +675,14 @@ class _DeviceScreen extends State<DeviceScreen> {
     resBody["speed"] = (5000- widget.speed).toString();
     resBody["end"] = false;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/speed", str);
   }
 
   void speedUpdateEnd() {
     var resBody = {};
-    resBody["speed"] = (5000 - widget.speed + 1).toString();
+    resBody["speed"] = (5000 - widget.speed).toString();
     resBody["end"] = true;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/speed", str);
   }
 
@@ -689,7 +692,6 @@ class _DeviceScreen extends State<DeviceScreen> {
     resBody["secondaryColor"] = widget.secondaryColor.value.toString();
     resBody["end"] = false;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/color", str);
   }
 
@@ -699,6 +701,5 @@ class _DeviceScreen extends State<DeviceScreen> {
     resBody["secondaryColor"] = widget.secondaryColor.value.toString();
     resBody["end"] = true;
     String str = json.encode(resBody);
-    print(str);
     postRequest(widget.ipAddress + "/color", str);  }
 }
