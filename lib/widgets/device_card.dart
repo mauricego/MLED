@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mled/screens/device_screen.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
@@ -69,7 +72,8 @@ class _DeviceCard extends State<DeviceCard> {
   @override
   Widget build(BuildContext context) {
     widget.checkConnectionTimer?.cancel();
-    widget.checkConnectionTimer = (Timer.periodic(const Duration(milliseconds: 5000), (timer) {
+    widget.checkConnectionTimer =
+        (Timer.periodic(const Duration(milliseconds: 5000), (timer) {
       getRequest(widget.ipAddress + "/information")
           .then((value) {
             var jsonData = value.toString();
@@ -107,11 +111,15 @@ class _DeviceCard extends State<DeviceCard> {
                     brightness: widget.brightness,
                     ledMode: widget.ledMode,
                     toggleState: widget.toggleState,
-                    speed: 5000 - widget.speed,
+                    speed: widget.speed,
                     primaryColor: widget.primaryColor,
                     secondaryColor: widget.secondaryColor,
                     connection: widget.connection,
                     callbackSetState: _callbackSetState)));
+      },
+      onLongPress: () async {
+        await showDeleteAlert(context);
+        setState(() {});
       },
       child: Container(
         decoration: BoxDecoration(
@@ -126,7 +134,10 @@ class _DeviceCard extends State<DeviceCard> {
                   : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
               blurRadius: 35,
             ),
-            const BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 35, spreadRadius: 20),
+            const BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.2),
+                blurRadius: 35,
+                spreadRadius: 20),
           ],
         ),
         child: Card(
@@ -148,8 +159,10 @@ class _DeviceCard extends State<DeviceCard> {
                         BoxShadow(
                           // color: Colors.green.withAlpha(100),
                           color: widget.toggleState
-                              ? createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.7))
-                              : createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.7)),
+                              ? createMaterialColor(
+                                  const Color.fromRGBO(5, 194, 112, 0.7))
+                              : createMaterialColor(
+                                  const Color.fromRGBO(255, 59, 59, 0.7)),
                           blurRadius: 15.0,
                           spreadRadius: 1.0,
                         ),
@@ -159,22 +172,27 @@ class _DeviceCard extends State<DeviceCard> {
                       icon: const Icon(Icons.power_settings_new),
                       onPressed: () {
                         if (widget.toggleState) {
-                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": false}');
+                          postRequest(widget.ipAddress + "/toggleState",
+                              '{"toggleState": false}');
                           setState(() {
                             widget.toggleState = false;
                           });
                         } else {
-                          postRequest(widget.ipAddress + "/toggleState", '{"toggleState": true}');
+                          postRequest(widget.ipAddress + "/toggleState",
+                              '{"toggleState": true}');
                           setState(() {
                             widget.toggleState = true;
                           });
                         }
                       },
-                      color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
+                      color: createMaterialColor(
+                          const Color.fromRGBO(235, 234, 239, 0.6)),
                       highlightColor: Colors.blue,
                       splashColor: widget.toggleState
-                          ? createMaterialColor(const Color.fromRGBO(255, 59, 59, 0.2))
-                          : createMaterialColor(const Color.fromRGBO(5, 194, 112, 0.2)),
+                          ? createMaterialColor(
+                              const Color.fromRGBO(255, 59, 59, 0.2))
+                          : createMaterialColor(
+                              const Color.fromRGBO(5, 194, 112, 0.2)),
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -200,8 +218,10 @@ class _DeviceCard extends State<DeviceCard> {
                     max: 255,
                     value: widget.brightness.toDouble(),
                     enableTooltip: true,
-                    tooltipTextFormatterCallback: (dynamic actualValue, String formattedText) {
-                      return ((actualValue / 255) * 100).round().toString() + " %";
+                    tooltipTextFormatterCallback:
+                        (dynamic actualValue, String formattedText) {
+                      return ((actualValue / 255) * 100).round().toString() +
+                          " %";
                     },
                     onChanged: (value) {
                       setState(() {
@@ -210,7 +230,8 @@ class _DeviceCard extends State<DeviceCard> {
                     },
                     onChangeStart: (value) {
                       widget.brightnessTimer?.cancel();
-                      widget.brightnessTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+                      widget.brightnessTimer = Timer.periodic(
+                          const Duration(milliseconds: 100), (timer) {
                         _brightnessTimer();
                       });
                     },
@@ -229,77 +250,111 @@ class _DeviceCard extends State<DeviceCard> {
     );
   }
 
+  Future<void> showDeleteAlert(BuildContext context) async {
+    final result = await showOkCancelAlertDialog(
+        context: context,
+        message: "Do you want to remove the device?",
+        title: 'Remove Device',
+        okLabel: "Yes",
+        cancelLabel: "No");
+    if (result == OkCancelResult.ok) {
+      await Hive.initFlutter();
+      Box box = await Hive.openBox("mled");
+      List<String> deviceList = box.get("devices");
+      deviceList.remove(widget.ipAddress);
+      box.put("devices", deviceList);
+    }
+  }
+
   void _brightnessTimer() {
-    postRequest(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
+    postRequest(widget.ipAddress + "/brightness",
+        '{"brightness": "' + widget.brightness.toString() + '"}');
   }
 
   Widget _buildNoConnectionCard() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(10),
-          topRight: Radius.circular(10),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: createMaterialColor(const Color.fromRGBO(50, 50, 50, 1.0)),
-            blurRadius: 35,
+    return GestureDetector(
+        onLongPress: () async {
+          await showDeleteAlert(context);
+          Navigator.pop(context);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(10),
+              topRight: Radius.circular(10),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    createMaterialColor(const Color.fromRGBO(50, 50, 50, 1.0)),
+                blurRadius: 35,
+              ),
+              const BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.2),
+                  blurRadius: 35,
+                  spreadRadius: 20),
+            ],
           ),
-          const BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.2), blurRadius: 35, spreadRadius: 20),
-        ],
-      ),
-      child: Card(
-        color: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15.0),
-        ),
-        elevation: 30,
-        child: Column(
-          children: <Widget>[
-            const SizedBox(height: 15),
-            Row(
+          child: Card(
+            color: createMaterialColor(const Color.fromRGBO(40, 41, 61, 1)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            elevation: 30,
+            child: Column(
               children: <Widget>[
-                const SizedBox(width: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(50),
-                    boxShadow: [
-                      BoxShadow(
-                        color: createMaterialColor(const Color.fromRGBO(103, 103, 103, 1.0)),
-                        blurRadius: 15.0,
-                        spreadRadius: 1.0,
+                const SizedBox(height: 15),
+                Row(
+                  children: <Widget>[
+                    const SizedBox(width: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: [
+                          BoxShadow(
+                            color: createMaterialColor(
+                                const Color.fromRGBO(103, 103, 103, 1.0)),
+                            blurRadius: 15.0,
+                            spreadRadius: 1.0,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.power_settings_new),
-                    color: Colors.grey,
-                    onPressed: () {},
-                  ),
+                      child: IconButton(
+                        icon: const Icon(Icons.power_settings_new),
+                        color: Colors.grey,
+                        onPressed: () {},
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Text(
+                      "No Connection to " + widget.ipAddress,
+                      textScaleFactor: 1.3,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 20),
-                Text(
-                  "No Connection to " + widget.ipAddress,
-                  textScaleFactor: 1.3,
-                  style: const TextStyle(color: Colors.white),
-                ),
+                SfSliderTheme(
+                  data: SfSliderThemeData(
+                    activeTrackColor: const Color.fromRGBO(143, 144, 166, 1),
+                    inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
+                    activeTrackHeight: 10,
+                    inactiveTrackHeight: 10,
+                    thumbRadius: 12,
+                    thumbColor: const Color.fromRGBO(255, 255, 255, 1),
+                    tooltipBackgroundColor:
+                        const Color.fromRGBO(85, 88, 112, 1),
+                  ),
+                  child: SfSlider(
+                      min: 0,
+                      max: 100,
+                      value: 100,
+                      onChanged: (value) {},
+                      onChangeStart: (value) {},
+                      onChangeEnd: (value) {}),
+                )
               ],
             ),
-            SfSliderTheme(
-              data: SfSliderThemeData(
-                activeTrackColor: const Color.fromRGBO(143, 144, 166, 1),
-                inactiveTrackColor: const Color.fromRGBO(143, 144, 166, 1),
-                activeTrackHeight: 10,
-                inactiveTrackHeight: 10,
-                thumbRadius: 12,
-                thumbColor: const Color.fromRGBO(255, 255, 255, 1),
-                tooltipBackgroundColor: const Color.fromRGBO(85, 88, 112, 1),
-              ),
-              child: SfSlider(min: 0, max: 100, value: 100, onChanged: (value) {}, onChangeStart: (value) {}, onChangeEnd: (value) {}),
-            )
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }

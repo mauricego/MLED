@@ -35,32 +35,7 @@ class _Manually extends State<Manually> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) => WillPopScope(
-      onWillPop: () async {
-        //clear the state
-        setState(() {});
-        // pop to get back to home
-        Navigator.pop(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Enter Device Manually"),
-          centerTitle: true,
-        ),
-        body: Center(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(20)),
-            child: const Text("Add Device"),
-            onPressed: () async {
-              _showDialog();
-            },
-          ),
-        ),
-      ));
-
-  _showDialog() async {
+  showDialog() async {
     final text = await showTextInputDialog(
       context: context,
       textFields: [
@@ -124,5 +99,11 @@ class _Manually extends State<Manually> {
           duration: EdgeAlert.LENGTH_VERY_LONG,
           icon: Icons.warning);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    throw UnimplementedError();
   }
 }

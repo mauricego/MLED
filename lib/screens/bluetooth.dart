@@ -29,10 +29,8 @@ class _Bluetooth extends State<Bluetooth> {
   late Box box;
 
   @override
-  initState() async {
+  initState() {
     super.initState();
-    await Hive.initFlutter();
-    box = await Hive.openBox("mled");
     _requestPermissionAndScan();
   }
 
@@ -58,7 +56,8 @@ class _Bluetooth extends State<Bluetooth> {
         //clear the state
         setState(() {});
         // pop to get back to home
-        Navigator.pop(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+        Navigator.pop(context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()));
         return true;
       },
       child: Scaffold(
@@ -77,7 +76,12 @@ class _Bluetooth extends State<Bluetooth> {
             height: 50,
             child: Row(
               children: <Widget>[
-                Expanded(child: Center(child: Text(device.name == '' ? '(unknown device)' : device.name))),
+                Expanded(
+                    child: Center(
+                        child: Text(
+                  device.name == '' ? '(unknown device)' : device.name,
+                  style: const TextStyle(color: Colors.white),
+                ))),
                 TextButton(
                   child: const Text(
                     'Connect',
@@ -86,35 +90,13 @@ class _Bluetooth extends State<Bluetooth> {
                   onPressed: () async {
                     await widget.flutterBlue.stopScan();
                     try {
-                      await device.connect().onError((error, stackTrace) => {device.disconnect(), device.connect()});
+                      await device.connect().onError((error, stackTrace) =>
+                          {device.disconnect(), device.connect()});
                       setState(() {
                         connectedDevice = device;
                       });
                       connectedDevice = device;
                       _showDialog();
-                    } catch (e) {
-                      if (e != 'already_connected') {
-                        rethrow;
-                      }
-                    }
-                  },
-                ),
-                FlatButton(
-                  color: Colors.blue,
-                  child: const Text(
-                    'Reset',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onPressed: () async {
-                    await widget.flutterBlue.stopScan();
-                    try {
-                      await device.connect().onError((error, stackTrace) => {device.disconnect(), device.connect()});
-                      setState(() {
-                        connectedDevice = device;
-                      });
-                      connectedDevice = device;
-                      String jsonString = '{"ssid":"' + widget.resetToken + '",' + '"password":"' + "reset_nvs" + '"}';
-                      _sendData(jsonString);
                     } catch (e) {
                       if (e != 'already_connected') {
                         rethrow;
@@ -154,11 +136,14 @@ class _Bluetooth extends State<Bluetooth> {
       title: 'Connection Setup',
       message: 'Input your SSID/WLAN name and password',
     );
-    ssid = text!.elementAt(0);
-    password = text.elementAt(1);
-    String jsonString = '{"ssid":"' + ssid + '",' + '"password":"' + password + '"}';
-    //send data to esp32
-    await _sendData(jsonString);
+    if (text != null) {
+      ssid = text.elementAt(0);
+      password = text.elementAt(1);
+      String jsonString =
+          '{"ssid":"' + ssid + '",' + '"password":"' + password + '"}';
+      //send data to esp32
+      await _sendData(jsonString);
+    }
   }
 
   _addBluetoothDeviceToList(final BluetoothDevice device) {
@@ -171,8 +156,11 @@ class _Bluetooth extends State<Bluetooth> {
 
   _requestPermissionAndScan() async {
     //location is needed in order to use bluetooth
+    await Hive.initFlutter();
+    box = await Hive.openBox("mled");
+    await Permission.bluetoothConnect.request();
+    await Permission.bluetoothScan.request();
     await Permission.location.request().then((value) => _searchDevices(value));
-    var status = await Permission.location.status;
   }
 
   _storeDevices() async {
@@ -191,14 +179,17 @@ class _Bluetooth extends State<Bluetooth> {
 
   _searchDevices(PermissionStatus permission) {
     if (permission.isGranted) {
-      widget.flutterBlue.connectedDevices.asStream().listen((List<BluetoothDevice> devices) {
+      widget.flutterBlue.connectedDevices
+          .asStream()
+          .listen((List<BluetoothDevice> devices) {
         for (BluetoothDevice device in devices) {
           _addBluetoothDeviceToList(device);
         }
       });
       widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
         for (ScanResult result in results) {
-          if (result.device.name != "" || result.device.name.contains("LED-Strip")) {
+          if (result.device.name != "" ||
+              result.device.name.contains("LED-Strip")) {
             _addBluetoothDeviceToList(result.device);
           }
         }
@@ -212,19 +203,25 @@ class _Bluetooth extends State<Bluetooth> {
 
   _sendData(String data) async {
     late BluetoothCharacteristic wifiCharacteristic;
-    RegExp regExIp = RegExp(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
-    List<BluetoothService> deviceServices = await connectedDevice.discoverServices();
+    RegExp regExIp = RegExp(
+        r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+    List<BluetoothService> deviceServices =
+        await connectedDevice.discoverServices();
 
     for (BluetoothService service in deviceServices) {
       if (service.uuid.toString() == widget.serviceUUID) {
-        for (BluetoothCharacteristic blCharacteristic in service.characteristics) {
-          if (blCharacteristic.uuid.toString() == widget.wifiCharacteristicUUID) {
+        for (BluetoothCharacteristic blCharacteristic
+            in service.characteristics) {
+          if (blCharacteristic.uuid.toString() ==
+              widget.wifiCharacteristicUUID) {
             wifiCharacteristic = blCharacteristic;
             await wifiCharacteristic.setNotifyValue(true);
             wifiCharacteristic.value.listen((value) {
               ipAddress = utf8.decode(value).toString();
               //notify returns nothing with the first notify
-              if (regExIp.hasMatch(ipAddress) && ipAddress != "0.0.0.0" && ipAddress != "") {
+              if (regExIp.hasMatch(ipAddress) &&
+                  ipAddress != "0.0.0.0" &&
+                  ipAddress != "") {
                 if (!gotMatchingIpAddressNotify) {
                   print("notify:  " + utf8.decode(value).toString());
                   gotMatchingIpAddressNotify = true;

@@ -73,7 +73,7 @@ class _MyApp extends State<MyApp> {
                   if (snapshot.hasError) {
                     return const Text('Something went wrong. Restart the app');
                   } else {
-                    return isFirstLaunch ? const SetupScreen() : const HomeScreen();
+                    return isFirstLaunch ? SetupScreen() : const HomeScreen();
                   }
               }
             }));

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import "package:mled/colorPicker/colorpicker.dart";
@@ -99,6 +100,22 @@ class _DeviceScreen extends State<DeviceScreen> {
         child: Scaffold(
             appBar: AppBar(
               title: Text(widget.ipAddress),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      var resBody = {};
+                      resBody["command"] = "reset_nvs";
+                      resBody["password"] = "b055684c-68d4-41e5-ac56-d140a2668cd4";
+                      String str = json.encode(resBody);
+                      print(str);
+                      postRequest(widget.ipAddress + "/reset", str);
+                    },
+                  ),
+                ),
+              ],
             ),
             body: SlidingUpPanel(
                 borderRadius: const BorderRadius.only(
@@ -210,7 +227,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     });
                   }
                   widget.callbackSetState(
-                      [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                      [widget.toggleState, widget.brightness, widget.ledMode,5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
                 },
                 color: createMaterialColor(const Color.fromRGBO(235, 234, 239, 0.6)),
                 highlightColor: Colors.blue,
@@ -272,12 +289,12 @@ class _DeviceScreen extends State<DeviceScreen> {
                   },
                   onChangeEnd: (value) {
                     widget.brightnessTimer?.cancel();
-                    brightnessUpdate();
+                    brightnessUpdateEnd();
                     setState(() {
                       widget.brightness = value.round();
                     });
                     widget.callbackSetState(
-                        [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                        [widget.toggleState, widget.brightness, widget.ledMode,5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
                   }),
             ),
           ),
@@ -334,12 +351,12 @@ class _DeviceScreen extends State<DeviceScreen> {
                   },
                   onChangeEnd: (value) {
                     widget.speedTimer?.cancel();
-                    speedUpdate();
+                    speedUpdateEnd();
                     setState(() {
                       widget.speed = value.round();
                     });
                     widget.callbackSetState(
-                        [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                        [widget.toggleState, widget.brightness, widget.ledMode, 5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
                   }),
             ),
           ),
@@ -403,12 +420,12 @@ class _DeviceScreen extends State<DeviceScreen> {
             },
             onColorChangedEnd: (Color value) {
               widget.colorTimer?.cancel();
-              colorUpdate();
+              colorUpdateEnd();
               setState(() {
                 widget.primaryColor = value;
               });
               widget.callbackSetState(
-                  [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                  [widget.toggleState, widget.brightness, widget.ledMode,5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
             },
           )
         ]));
@@ -453,12 +470,12 @@ class _DeviceScreen extends State<DeviceScreen> {
             },
             onColorChangedEnd: (Color value) {
               widget.colorTimer?.cancel();
-              colorUpdate();
+              colorUpdateEnd();
               setState(() {
                 widget.secondaryColor = value;
               });
               widget.callbackSetState(
-                  [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                  [widget.toggleState, widget.brightness, widget.ledMode,5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
             },
           ),
         ]));
@@ -606,7 +623,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                     widget.selectedModeIndicator = Colors.yellow;
                   });
                   widget.callbackSetState(
-                      [widget.toggleState, widget.brightness, widget.ledMode, widget.speed, widget.primaryColor, widget.secondaryColor]);
+                      [widget.toggleState, widget.brightness, widget.ledMode, 5000 - widget.speed, widget.primaryColor, widget.secondaryColor]);
                 },
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 0.0),
                 leading: Container(
@@ -630,15 +647,58 @@ class _DeviceScreen extends State<DeviceScreen> {
   }
 
   void brightnessUpdate() {
-    postRequest(widget.ipAddress + "/brightness", '{"brightness": "' + widget.brightness.toString() + '"}');
+    var resBody = {};
+    resBody["brightness"] = widget.brightness.toString();
+    resBody["end"] = false;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/brightness", str);
+  }
+
+  void brightnessUpdateEnd() {
+    var resBody = {};
+    resBody["brightness"] = (widget.brightness).toString();
+    resBody["end"] = true;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/brightness", str);
+
   }
 
   void speedUpdate() {
-    postRequest(widget.ipAddress + "/speed", '{"speed": "' + (5000- widget.speed).toString() + '"}');
+    var resBody = {};
+    resBody["speed"] = (5000- widget.speed).toString();
+    resBody["end"] = false;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/speed", str);
+  }
+
+  void speedUpdateEnd() {
+    var resBody = {};
+    resBody["speed"] = (5000 - widget.speed + 1).toString();
+    resBody["end"] = true;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/speed", str);
   }
 
   void colorUpdate() {
-    postRequest(widget.ipAddress + "/color",
-        '{"primaryColor": "' + widget.primaryColor.value.toString() + '", "secondaryColor": "' + widget.secondaryColor.value.toString() + '"}');
+    var resBody = {};
+    resBody["primaryColor"] = widget.primaryColor.value.toString();
+    resBody["secondaryColor"] = widget.secondaryColor.value.toString();
+    resBody["end"] = false;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/color", str);
   }
+
+  void colorUpdateEnd() {
+    var resBody = {};
+    resBody["primaryColor"] = widget.primaryColor.value.toString();
+    resBody["secondaryColor"] = widget.secondaryColor.value.toString();
+    resBody["end"] = true;
+    String str = json.encode(resBody);
+    print(str);
+    postRequest(widget.ipAddress + "/color", str);  }
 }

@@ -30,14 +30,13 @@ class _HomeScreen extends State<HomeScreen> {
     box = await Hive.openBox("mled");
 
     setState(() {
-      deviceList = box.get("deviceList");
+      deviceList = box.get("devices", defaultValue: <String>[]);
     });
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
-        leading: const Icon(Icons.menu),
         title: const Text('Devices'),
         actions: [
           Padding(
@@ -45,11 +44,42 @@ class _HomeScreen extends State<HomeScreen> {
             child: IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SetupScreen()));
               },
             ),
           ),
         ],
+      ),
+      drawer: Drawer(
+        // Add a ListView to the drawer. This ensures the user can scroll
+        // through the options in the drawer if there isn't enough vertical
+        // space to fit everything.
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text('Drawer Header'),
+            ),
+            ListTile(
+              title: const Text('Add Device'),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SetupScreen()));
+              },
+            ),
+            ListTile(
+              title: const Text('Item 2'),
+              onTap: () {
+                // Update the state of the app
+                // ...
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
       body: _buildListViewOfDevices());
 
@@ -59,11 +89,14 @@ class _HomeScreen extends State<HomeScreen> {
     for (String device in deviceList) {
       containers.add(
         FutureBuilder<String>(
-          future: getRequest(device + "/information").timeout(const Duration(seconds: 2)).onError((error, stackTrace) {
+          future: getRequest(device + "/information")
+              .timeout(const Duration(seconds: 2))
+              .onError((error, stackTrace) {
             return Future.error(error!);
           }),
           builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-            if (snapshot.connectionState == ConnectionState.done && !snapshot.hasError) {
+            if (snapshot.connectionState == ConnectionState.done &&
+                !snapshot.hasError) {
               var jsonData = snapshot.data.toString();
               var parsedJson = json.decode(jsonData);
               return DeviceCard(
