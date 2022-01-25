@@ -19,3 +19,11 @@ Future<String> getRequest(String ipAddress) async{
 
     return Future.value(response.body.toString());
 }
+
+Future<void> postRequestUpdateFirmware(String ipAddress, String data) async{
+    final url = Uri.parse("http://" + ipAddress);
+    final headers = {"Content-type": "multipart/form-data"};
+    final response = await post(url, headers: headers, body: data);
+    print('Status code: ${response.statusCode}');
+    print('Body: ${response.body}');
+}

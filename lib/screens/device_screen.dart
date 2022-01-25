@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import "package:mled/colorPicker/colorpicker.dart";
+import 'package:mled/screens/device_settings_screen.dart';
 import 'package:mled/tools/api_request.dart';
 import 'package:mled/tools/color_convert.dart';
 import 'package:mled/tools/led_modes.dart';
@@ -106,11 +107,7 @@ class _DeviceScreen extends State<DeviceScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () {
-                      var resBody = {};
-                      resBody["command"] = "reset_nvs";
-                      resBody["password"] = "b055684c-68d4-41e5-ac56-d140a2668cd4";
-                      String str = json.encode(resBody);
-                      postRequest(widget.ipAddress + "/reset", str);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => DeviceSettingsScreen(ipAddress: widget.ipAddress)));
                     },
                   ),
                 ),
